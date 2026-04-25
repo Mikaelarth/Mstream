@@ -37,13 +37,24 @@ class SettingsScreen(Screen):
         self._load_settings()
 
     def _load_settings(self):
+        # Clés API Binance : on ne ré-affiche JAMAIS la valeur en clair, même
+        # si déchiffrée depuis la DB. Une clé API en clair à l'écran =
+        # exposition par capture/screenshot/regard. Si la clé est déjà
+        # configurée, on affiche un placeholder et le user peut écraser.
         if hasattr(self.ids, "api_key_input"):
-            key = database.get_setting_encrypted("binance_api_key")
-            self.ids.api_key_input.text = key if key else ""
-
+            key_exists = bool(database.get_setting_encrypted("binance_api_key"))
+            self.ids.api_key_input.text = ""
+            self.ids.api_key_input.hint_text = (
+                "Cle deja configuree (re-saisir pour changer)"
+                if key_exists else "Votre cle API Binance"
+            )
         if hasattr(self.ids, "api_secret_input"):
-            secret = database.get_setting_encrypted("binance_api_secret")
-            self.ids.api_secret_input.text = secret if secret else ""
+            secret_exists = bool(database.get_setting_encrypted("binance_api_secret"))
+            self.ids.api_secret_input.text = ""
+            self.ids.api_secret_input.hint_text = (
+                "Cle deja configuree (re-saisir pour changer)"
+                if secret_exists else "Votre cle secrete Binance"
+            )
 
         if hasattr(self.ids, "risk_input"):
             self.ids.risk_input.text = database.get_setting("risk_per_trade", "2.0")
@@ -85,11 +96,21 @@ class SettingsScreen(Screen):
         if hasattr(self.ids, "libre_switch"):
             self.ids.libre_switch.active = lib_on
 
-        # ── Telegram (V12) ─────────────────────────────────────────────────────
+        # ── Telegram (V12) — secret, jamais re-afficher en clair ───────────────
         if hasattr(self.ids, "telegram_token_input"):
-            self.ids.telegram_token_input.text = database.get_setting_encrypted("telegram_bot_token")
+            token_exists = bool(database.get_setting_encrypted("telegram_bot_token"))
+            self.ids.telegram_token_input.text = ""
+            self.ids.telegram_token_input.hint_text = (
+                "Token deja configure (re-saisir pour changer)"
+                if token_exists else "123456:ABC-..."
+            )
         if hasattr(self.ids, "telegram_chat_input"):
-            self.ids.telegram_chat_input.text = database.get_setting_encrypted("telegram_chat_id")
+            chat_exists = bool(database.get_setting_encrypted("telegram_chat_id"))
+            self.ids.telegram_chat_input.text = ""
+            self.ids.telegram_chat_input.hint_text = (
+                "Chat ID deja configure (re-saisir pour changer)"
+                if chat_exists else "ex: 123456789"
+            )
         self._refresh_telegram_status()
 
         # ── Paper Mode (V12) ───────────────────────────────────────────────────
@@ -176,44 +197,111 @@ class SettingsScreen(Screen):
             self._show_status("Valeur invalide", error=True)
 
     def toggle_master(self, value: bool):
+        """
+        Activer/désactiver le Bot Maître.
+
+        Si paper mode INACTIF + activation : on exige un double-tap de
+        confirmation explicite (le bot va trader avec de l'argent RÉEL).
+        Si paper mode ACTIF : pas besoin de confirmation (zero risque).
+        """
         self.master_active = value
         budget = float(database.get_setting("budget_master", "0"))
-        if value:
-            if budget <= 0:
-                self._show_status("Définissez d'abord un budget > 0 !", error=True)
-                self.master_active = False
-                database.set_setting("auto_trade_master", "false")
-                if hasattr(self.ids, "master_switch"):
-                    Clock.schedule_once(
-                        lambda dt: setattr(self.ids.master_switch, "active", False), 0
-                    )
-            else:
-                database.set_setting("auto_trade_master", "true")
-                self._show_status(
-                    f"BOT MAÎTRE ACTIVÉ — Capital: ${budget:,.2f} USDT | "
-                    f"Cycles toutes les 5 min"
-                )
-        else:
+
+        if not value:
+            # Désactivation : toujours sans friction
             database.set_setting("auto_trade_master", "false")
             self._show_status("Bot Maître DÉSACTIVÉ")
+            return
+
+        # Activation : checks de garde
+        if budget <= 0:
+            self._show_status("Définissez d'abord un budget > 0 !", error=True)
+            self._revert_master_switch()
+            return
+
+        # Confirmation explicite SI argent réel
+        if not paper_mode.is_paper_mode():
+            if not getattr(self, "_master_activate_confirmed", False):
+                self._master_activate_confirmed = True
+                self._show_status(
+                    f"ATTENTION : ARGENT REEL ${budget:,.2f}. "
+                    "Re-cliquer le switch dans 5s pour CONFIRMER.",
+                    error=True
+                )
+                self._revert_master_switch()
+                Clock.schedule_once(
+                    lambda dt: setattr(self, "_master_activate_confirmed", False), 5
+                )
+                return
+            self._master_activate_confirmed = False
+
+        database.set_setting("auto_trade_master", "true")
+        mode = "PAPER (virtuel)" if paper_mode.is_paper_mode() else "REEL"
+        self._show_status(
+            f"BOT MAITRE ACTIVE [{mode}] — Capital: ${budget:,.2f} USDT | "
+            f"Cycle 60 min"
+        )
+
+    def _revert_master_switch(self):
+        """Force le switch UI à OFF (utilisé par les checks de garde)."""
+        self.master_active = False
+        database.set_setting("auto_trade_master", "false")
+        if hasattr(self.ids, "master_switch"):
+            Clock.schedule_once(
+                lambda dt: setattr(self.ids.master_switch, "active", False), 0
+            )
 
     # ─── Telegram (V12) ────────────────────────────────────────────────────────
 
     def save_telegram_credentials(self):
+        """
+        Sauvegarde token + chat_id Telegram (chiffrés en DB).
+
+        Refus :
+          - Si UN champ est vide ET pas de creds existants : besoin des deux.
+          - Si UN champ est vide MAIS creds existants : on garde l'existant.
+          - Validation format (longueur, regex) via core.validation.
+        Pour effacer les creds, utiliser le bouton 'Effacer' explicite.
+        """
         if not (hasattr(self.ids, "telegram_token_input") and hasattr(self.ids, "telegram_chat_input")):
             return
         token = self.ids.telegram_token_input.text.strip()
         chat_id = self.ids.telegram_chat_input.text.strip()
 
-        # Validation avant sauvegarde
-        ok_t, msg_t = validation.validate_setting("telegram_bot_token", token) if token else (True, "")
-        ok_c, msg_c = validation.validate_setting("telegram_chat_id", chat_id) if chat_id else (True, "")
-        if not ok_t:
-            self._show_status(msg_t, error=True); return
-        if not ok_c:
-            self._show_status(msg_c, error=True); return
+        existing_token = database.get_setting_encrypted("telegram_bot_token")
+        existing_chat  = database.get_setting_encrypted("telegram_chat_id")
 
-        notifications.set_credentials(token, chat_id)
+        if not token and not chat_id:
+            self._show_status(
+                "Veuillez saisir token ET chat_id (utilisez 'Effacer' pour supprimer)",
+                error=True
+            )
+            return
+
+        # Si un champ est vide, garder la valeur existante
+        final_token = token if token else existing_token
+        final_chat  = chat_id if chat_id else existing_chat
+        if not final_token or not final_chat:
+            self._show_status(
+                "Token ET chat_id requis (l'un des champs est vide et non configuré)",
+                error=True
+            )
+            return
+
+        # Validation format (uniquement sur les valeurs effectivement saisies)
+        if token:
+            ok_t, msg_t = validation.validate_setting("telegram_bot_token", token)
+            if not ok_t:
+                self._show_status(msg_t, error=True); return
+        if chat_id:
+            ok_c, msg_c = validation.validate_setting("telegram_chat_id", chat_id)
+            if not ok_c:
+                self._show_status(msg_c, error=True); return
+
+        notifications.set_credentials(final_token, final_chat)
+        # Vider les champs après sauvegarde (anti-screenshot)
+        self.ids.telegram_token_input.text = ""
+        self.ids.telegram_chat_input.text  = ""
         self._refresh_telegram_status()
         self._show_status("Credentials Telegram chiffrés & sauvegardés")
 
@@ -284,26 +372,53 @@ class SettingsScreen(Screen):
                 lambda dt: self._show_status(
                     f"🚨 Emergency stop : {closed} positions fermées", error=False), 0
             )
-        except (ImportError, AttributeError, Exception) as exc:
+        except Exception as exc:
+            # Catch-all volontaire : un échec d'emergency stop ne doit pas
+            # planter l'app — on remonte juste le message à l'UI.
             Clock.schedule_once(
                 lambda dt: self._show_status(f"Echec emergency stop : {exc}", error=True), 0
             )
 
     def save_api_keys(self):
-        """Sauvegarde les clés API Binance."""
+        """
+        Sauvegarde les clés API Binance.
+
+        Comportement :
+          - Si les deux champs sont vides ET aucune clé n'existe en DB → erreur.
+          - Si les deux champs sont vides MAIS clés existent en DB → on garde
+            les clés DB et on lance juste le test de connexion (pratique pour
+            tester sans re-saisir).
+          - Sinon les deux champs doivent être remplis pour écraser.
+        """
         if not hasattr(self.ids, "api_key_input"):
             return
 
         api_key    = self.ids.api_key_input.text.strip()
         api_secret = self.ids.api_secret_input.text.strip()
 
-        if not api_key or not api_secret:
+        existing_key    = database.get_setting_encrypted("binance_api_key")
+        existing_secret = database.get_setting_encrypted("binance_api_secret")
+
+        if not api_key and not api_secret:
+            if existing_key and existing_secret:
+                # Champs vides + clés existantes : on teste la connexion existante
+                self._show_status("Test de connexion avec les clés existantes…")
+                from threading import Thread
+                Thread(target=self._test_binance, daemon=True).start()
+                return
             self._show_status("Veuillez remplir les deux champs", error=True)
+            return
+
+        if not api_key or not api_secret:
+            self._show_status("Veuillez remplir LES DEUX champs (clé ET secret)", error=True)
             return
 
         database.set_setting_encrypted("binance_api_key",    api_key)
         database.set_setting_encrypted("binance_api_secret", api_secret)
         exchange.invalidate_client_cache()   # forcer recréation avec les nouvelles clés
+        # Vider les champs IMMÉDIATEMENT après sauvegarde (anti-screenshot)
+        self.ids.api_key_input.text    = ""
+        self.ids.api_secret_input.text = ""
         self._show_status("Clés chiffrées & sauvegardées. Test de connexion…")
 
         from threading import Thread
