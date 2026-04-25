@@ -224,8 +224,23 @@ def _compute_stop_take(
     atr_val: float | None,
     supports: list,
     resistances: list,
+    min_rr: float = 2.0,
 ) -> tuple[float, float, float]:
-    """Calcule stop-loss, take-profit et ratio risque/récompense."""
+    """
+    Calcule stop-loss, take-profit et ratio risque/récompense (R/R).
+
+    Règles de qualité (un trader pro ne prend pas de R/R < 2:1) :
+      1. SL = max(1.5 × ATR, support * 0.995) — mais le support n'est utilisé
+         QUE s'il est suffisamment éloigné (≥ 0.5 × ATR du prix). Sinon le
+         marché est en consolidation et on prend le SL ATR.
+      2. TP = price + 3 × ATR par défaut. La résistance plafonne SEULEMENT
+         si elle est suffisamment éloignée (≥ 1 × ATR du prix). Sinon on
+         garde l'ATR pure.
+      3. Si malgré ça le R/R < min_rr, on étend le TP pour atteindre min_rr
+         (le SL reste fixe — défini par la volatilité, intouchable).
+
+    Retourne (stop_loss, take_profit, rr_ratio).
+    """
     if atr_val is None or atr_val == 0:
         atr_val = price * 0.02  # 2% par défaut
 
@@ -233,26 +248,54 @@ def _compute_stop_take(
     take_profit = 0.0
 
     if signal in (Signal.BUY, Signal.STRONG_BUY):
-        # Stop-loss : 1.5× ATR sous le prix ou dernier support
+        # SL ATR-based (ancrage à la volatilité)
         stop_loss = price - (1.5 * atr_val)
+        # Support seulement s'il est éloigné (sinon = consolidation = trap)
         if supports:
-            nearest_support = max([s for s in supports if s < price], default=stop_loss)
-            stop_loss = max(stop_loss, nearest_support * 0.995)
+            valid_sup = [s for s in supports
+                         if s < price and (price - s) >= 0.5 * atr_val]
+            if valid_sup:
+                nearest_support = max(valid_sup)
+                # Le SL doit ÊTRE PLUS BAS que le support (sécurité)
+                stop_loss = max(stop_loss, nearest_support * 0.995)
 
-        # Take-profit : 3× ATR au-dessus (ratio R/R = 2:1)
+        # TP ATR par défaut (3× ATR = R/R 2:1 garanti)
         tp_atr = price + (3 * atr_val)
         if resistances:
-            nearest_resistance = min([r for r in resistances if r > price], default=tp_atr)
-            take_profit = min(tp_atr, nearest_resistance * 1.005)
+            valid_res = [r for r in resistances
+                         if r > price and (r - price) >= 1.0 * atr_val]
+            if valid_res:
+                nearest_resistance = min(valid_res)
+                take_profit = min(tp_atr, nearest_resistance * 1.005)
+            else:
+                take_profit = tp_atr
         else:
             take_profit = tp_atr
+
+        # Garantie R/R : si le R/R calculé est < min_rr, on étend le TP
+        # SL reste fixe (intouchable, défini par la volatilité réelle)
+        risk = price - stop_loss
+        if risk > 0:
+            current_rr = (take_profit - price) / risk
+            if current_rr < min_rr:
+                take_profit = price + risk * min_rr
 
     elif signal in (Signal.SELL, Signal.STRONG_SELL):
         stop_loss   = price + (1.5 * atr_val)
         take_profit = price - (3 * atr_val)
         if supports:
-            nearest_support = max([s for s in supports if s < price], default=take_profit)
-            take_profit = max(take_profit, nearest_support * 0.99)
+            valid_sup = [s for s in supports
+                         if s < price and (price - s) >= 1.0 * atr_val]
+            if valid_sup:
+                nearest_support = max(valid_sup)
+                take_profit = max(take_profit, nearest_support * 0.99)
+
+        # Garantie R/R sur SELL aussi
+        risk = stop_loss - price
+        if risk > 0:
+            current_rr = (price - take_profit) / risk
+            if current_rr < min_rr:
+                take_profit = price - risk * min_rr
 
     risk = abs(price - stop_loss)
     reward = abs(take_profit - price)
@@ -333,14 +376,25 @@ def analyze(coin_id: str, symbol: str, indicators: dict) -> TradeSignal:
 
     confidence = min(100, abs(score_clamped) * 1.2)
 
-    # Calcul stop-loss / take-profit
+    # Calcul stop-loss / take-profit (R/R minimum garanti à 2.0)
     stop_loss, take_profit, rr_ratio = _compute_stop_take(
         price,
         signal,
         indicators.get("atr"),
         indicators.get("supports", []),
         indicators.get("resistances", []),
+        min_rr=2.0,
     )
+
+    # Garde-fou final : si malgré tout le R/R est faible (<1.5), on
+    # dégrade le signal — on ne dit JAMAIS "ACHAT FORT" sur un trade
+    # à espérance négative.
+    if rr_ratio < 1.5 and signal in (Signal.STRONG_BUY, Signal.BUY):
+        signal = Signal.HOLD
+        all_reasons.insert(0, f"R/R trop faible ({rr_ratio:.2f}x) — signal converti en HOLD")
+    elif rr_ratio < 1.5 and signal in (Signal.STRONG_SELL, Signal.SELL):
+        signal = Signal.HOLD
+        all_reasons.insert(0, f"R/R trop faible ({rr_ratio:.2f}x) — signal converti en HOLD")
 
     return TradeSignal(
         coin_id=coin_id,

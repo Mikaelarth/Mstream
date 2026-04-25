@@ -186,30 +186,55 @@ class BacktestScreen(Screen):
             bt = Backtest(cfg)
             result = bt.run(coins_data)
             r = result.report
+
+            # Calcul du warmup (60 candles 1h = 2.5j)
+            warmup_days = (cfg.warmup_candles * cfg.candle_duration_sec) / 86400
+
             summary = (
                 f"Backtest terminé\n\n"
-                f"Capital initial : ${r['initial_capital']:,.2f}\n"
-                f"Capital final   : ${r['final_capital']:,.2f}\n"
-                f"Rendement total : {r['total_return_pct']:+.2f}%\n"
-                f"Annualisé       : {r['annualized_return']:+.2f}%\n\n"
-                f"Sharpe Ratio    : {r['sharpe']:.3f}\n"
-                f"Sortino Ratio   : {r['sortino']:.3f}\n"
-                f"Calmar Ratio    : {r['calmar']:.3f}\n"
-                f"Max Drawdown    : {r['max_drawdown_pct']:.2f}%\n\n"
-                f"Total trades    : {r['total_trades']}\n"
-                f"Wins / Losses   : {r['winners']} / {r['losers']}\n"
-                f"Win rate        : {r['win_rate_pct']:.2f}%\n"
-                f"Profit factor   : {r['profit_factor']:.3f}\n"
-                f"Expectancy      : ${r['expectancy_usdt']:+.2f}/trade\n\n"
-                f"R-multiple avg  : {r['r_avg']:+.3f}\n"
-                f"R best / worst  : {r['r_best']:+.2f} / {r['r_worst']:+.2f}\n\n"
-                f"Durée période   : {result.duration_days:.1f} jours\n"
+                f"PÉRIODE\n"
+                f"Demandée       : {days} jours\n"
+                f"Warmup (skip)  : {warmup_days:.1f} jours (calcul indicateurs)\n"
+                f"Tradée réelle  : {result.duration_days:.1f} jours\n\n"
+                f"CAPITAL\n"
+                f"Initial        : ${r['initial_capital']:,.2f}\n"
+                f"Final          : ${r['final_capital']:,.2f}\n"
+                f"Rendement total: {r['total_return_pct']:+.2f}%\n"
+                f"Annualisé      : {r['annualized_return']:+.2f}%\n\n"
+                f"RATIOS RISK-ADJUSTED\n"
+                f"Sharpe         : {r['sharpe']:.3f}\n"
+                f"Sortino        : {r['sortino']:.3f}\n"
+                f"Calmar         : {r['calmar']:.3f}\n"
+                f"Max Drawdown   : {r['max_drawdown_pct']:.2f}%\n\n"
+                f"TRADES\n"
+                f"Total          : {r['total_trades']}\n"
+                f"Wins / Losses  : {r['winners']} / {r['losers']}\n"
+                f"Win rate       : {r['win_rate_pct']:.2f}%\n"
+                f"Profit factor  : {r['profit_factor']:.3f}\n"
+                f"Expectancy     : ${r['expectancy_usdt']:+.2f}/trade\n\n"
+                f"R-MULTIPLES\n"
+                f"R-multiple avg : {r['r_avg']:+.3f}\n"
+                f"R best / worst : {r['r_best']:+.2f} / {r['r_worst']:+.2f}\n\n"
                 f"Sorties par raison : {result.closed_by_reason}\n"
             )
+
+            # Si AUCUN trade, l'utilisateur a besoin de comprendre POURQUOI
+            if r['total_trades'] == 0:
+                summary += (
+                    "\n[!] AUCUN TRADE EXÉCUTÉ\n"
+                    "Causes possibles :\n"
+                    "  - Critères trop stricts (R/R min, score min)\n"
+                    "  - Régime de marché défavorable (filtre profile)\n"
+                    "  - Données insuffisantes ou volatilité trop faible\n"
+                    "Voir les rejets ci-dessous pour comprendre.\n"
+                )
+
             if result.rejections_by_filter:
                 summary += "\nFiltres (rejets) :\n"
+                total_rejets = sum(result.rejections_by_filter.values())
                 for k, v in sorted(result.rejections_by_filter.items(), key=lambda x: -x[1]):
-                    summary += f"  {k:<25}: {v}\n"
+                    pct = (v / total_rejets * 100) if total_rejets else 0
+                    summary += f"  {k:<25}: {v}  ({pct:.0f}%)\n"
 
             Clock.schedule_once(lambda dt: self._show_success(summary), 0)
         except (OSError, ValueError, KeyError, TypeError) as exc:

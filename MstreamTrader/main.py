@@ -144,10 +144,18 @@ class CoinListWidget(GridLayout):
 
         # Signal badge
         if sig:
-            from core.signals import SIGNAL_LABELS
-            sig_label = SIGNAL_LABELS[sig.signal][:5]
+            from core.signals import Signal as Sig
+            # Labels courts mais distinctifs (le tronquage [:5] cassait
+            # STRONG_BUY="ACHAT FORT" → "ACHAT" indistinguable de BUY)
+            short_label = {
+                Sig.STRONG_BUY:  "ACHAT++",
+                Sig.BUY:         "ACHAT",
+                Sig.HOLD:        "HOLD",
+                Sig.SELL:        "VENTE",
+                Sig.STRONG_SELL: "VENTE++",
+            }.get(sig.signal, "")
             row.add_widget(Label(
-                text=f"[b]{sig_label}[/b]\n[size=9]{sig.confidence:.0f}%[/size]",
+                text=f"[b]{short_label}[/b]\n[size=9]{sig.confidence:.0f}%[/size]",
                 markup=True, font_size=dp(11), size_hint_x=0.28, halign="right",
                 color=list(sig.color)
             ))

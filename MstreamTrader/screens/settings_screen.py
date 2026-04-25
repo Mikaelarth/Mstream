@@ -103,7 +103,7 @@ class SettingsScreen(Screen):
 
     def _refresh_telegram_status(self):
         if notifications.is_configured():
-            self.telegram_status = "✓ Configuré"
+            self.telegram_status = "Configuré"
             self.telegram_color  = [0.0, 0.85, 0.4, 1]
         else:
             self.telegram_status = "Non configuré"
@@ -269,7 +269,7 @@ class SettingsScreen(Screen):
         # Confirmation par double-tap : on demande au user de re-cliquer
         if not getattr(self, "_emergency_stop_confirmed", False):
             self._emergency_stop_confirmed = True
-            self._show_status("⚠ Cliquer à nouveau pour CONFIRMER l'arrêt d'urgence", error=True)
+            self._show_status("ATTENTION : Cliquer à nouveau pour CONFIRMER l'arret d'urgence", error=True)
             Clock.schedule_once(lambda dt: setattr(self, "_emergency_stop_confirmed", False), 5)
             return
         self._emergency_stop_confirmed = False

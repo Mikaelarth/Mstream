@@ -107,7 +107,7 @@ class DashboardScreen(Screen):
         balance = float(database.get_setting("usdt_balance", "0"))
         api_key = database.get_setting_encrypted("binance_api_key", "")
         if balance == 0.0 and not api_key:
-            self.usdt_balance = "⚙ Configurer Binance"
+            self.usdt_balance = "Configurer Binance"
         elif balance == 0.0:
             self.usdt_balance = "$0.00 (synchro...)"
         else:
@@ -115,7 +115,7 @@ class DashboardScreen(Screen):
 
         # Indicateur source des données
         if api_key:
-            self.api_configured   = "Binance ✓ — Données de votre compte réel"
+            self.api_configured   = "Binance OK - Données de votre compte réel"
             self.api_status_color = [0.0, 0.85, 0.4, 1]
         else:
             self.api_configured   = "CoinGecko API — Prix marché en direct (sans compte)"
