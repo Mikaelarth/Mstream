@@ -20,7 +20,6 @@ from core import notifications, paper_mode, validation
 class SettingsScreen(Screen):
     status_text      = StringProperty("")
     status_color     = ListProperty([1, 1, 1, 1])
-    auto_trade       = BooleanProperty(False)
     risk_per_trade   = StringProperty("2.0")
     master_active    = BooleanProperty(False)
     master_roi_text  = StringProperty("ROI: +0.00%")
@@ -61,11 +60,6 @@ class SettingsScreen(Screen):
 
         if hasattr(self.ids, "balance_input"):
             self.ids.balance_input.text = database.get_setting("usdt_balance", "0.0")
-
-        auto = database.get_setting("auto_trade", "false") == "true"
-        self.auto_trade = auto
-        if hasattr(self.ids, "auto_switch"):
-            self.ids.auto_switch.active = auto
 
         # ── Bot Maître ─────────────────────────────────────────────────────────
         if hasattr(self.ids, "budget_master_input"):
@@ -157,6 +151,10 @@ class SettingsScreen(Screen):
 
     # ─── Bot Maître ───────────────────────────────────────────────────────────
 
+    # Borne max raisonnable pour les budgets : 10 millions USDT.
+    # Au-delà, c'est probablement une erreur de saisie.
+    MAX_BUDGET_USDT = 10_000_000.0
+
     def save_budget_master(self):
         if not hasattr(self.ids, "budget_master_input"):
             return
@@ -164,6 +162,12 @@ class SettingsScreen(Screen):
             budget = float(self.ids.budget_master_input.text)
             if budget <= 0:
                 self._show_status("Le budget doit être > 0 USDT", error=True)
+                return
+            if budget > self.MAX_BUDGET_USDT:
+                self._show_status(
+                    f"Budget trop eleve (max ${self.MAX_BUDGET_USDT:,.0f})",
+                    error=True
+                )
                 return
             database.set_setting("budget_master", str(budget))
             # Mémoriser le capital initial uniquement à la première configuration
@@ -243,13 +247,21 @@ class SettingsScreen(Screen):
         )
 
     def _revert_master_switch(self):
-        """Force le switch UI à OFF (utilisé par les checks de garde)."""
+        """Force le switch master UI à OFF (compat ancien usage)."""
         self.master_active = False
         database.set_setting("auto_trade_master", "false")
-        if hasattr(self.ids, "master_switch"):
-            Clock.schedule_once(
-                lambda dt: setattr(self.ids.master_switch, "active", False), 0
-            )
+        self._revert_switch("master_switch")
+
+    def _revert_switch(self, switch_id: str):
+        """Force un switch UI à OFF de façon thread-safe.
+
+        Utilisé après une activation refusée (budget=0, confirmation
+        manquante, etc.) pour que l'utilisateur voie visuellement que
+        le switch est revenu sur OFF.
+        """
+        if hasattr(self.ids, switch_id):
+            switch = self.ids[switch_id]
+            Clock.schedule_once(lambda dt: setattr(switch, "active", False), 0)
 
     # ─── Telegram (V12) ────────────────────────────────────────────────────────
 
@@ -333,6 +345,12 @@ class SettingsScreen(Screen):
             self._show_status("Budget paper invalide", error=True); return
         if budget < 0:
             self._show_status("Budget paper doit être >= 0", error=True); return
+        if budget > self.MAX_BUDGET_USDT:
+            self._show_status(
+                f"Budget paper trop eleve (max ${self.MAX_BUDGET_USDT:,.0f})",
+                error=True
+            )
+            return
         paper_mode.init_paper_budget(budget)
         self._refresh_paper_roi()
         self._show_status(f"Budget paper initialisé : ${budget:,.2f}")
@@ -487,23 +505,19 @@ class SettingsScreen(Screen):
         if hasattr(self.ids, "balance_input"):
             try:
                 balance = float(self.ids.balance_input.text)
-                if balance >= 0:
-                    database.set_setting("usdt_balance", str(balance))
-                    self._show_status(f"Solde USDT mis à jour: ${balance:,.2f}")
-                else:
-                    self._show_status("Solde invalide", error=True)
+                if balance < 0:
+                    self._show_status("Solde invalide (>= 0)", error=True)
+                    return
+                if balance > self.MAX_BUDGET_USDT:
+                    self._show_status(
+                        f"Solde trop eleve (max ${self.MAX_BUDGET_USDT:,.0f})",
+                        error=True
+                    )
+                    return
+                database.set_setting("usdt_balance", str(balance))
+                self._show_status(f"Solde USDT mis à jour: ${balance:,.2f}")
             except ValueError:
                 self._show_status("Valeur invalide", error=True)
-
-    def toggle_auto_trade(self, value: bool):
-        self.auto_trade = value
-        database.set_setting("auto_trade", "true" if value else "false")
-        if value:
-            self._show_status(
-                "Trading automatique ACTIVÉ — Les signaux forts seront exécutés"
-            )
-        else:
-            self._show_status("Trading automatique DÉSACTIVÉ")
 
     # ─── Portefeuille Sécurité ────────────────────────────────────────────────
 
@@ -512,35 +526,67 @@ class SettingsScreen(Screen):
             return
         try:
             budget = float(self.ids.budget_securite_input.text)
-            if budget >= 0:
-                database.set_setting("budget_securite", str(budget))
-                self._show_status(f"Budget Sécurité: ${budget:,.2f} USDT sauvegardé")
-            else:
-                self._show_status("Budget invalide", error=True)
+            if budget < 0:
+                self._show_status("Budget invalide (>= 0)", error=True)
+                return
+            if budget > self.MAX_BUDGET_USDT:
+                self._show_status(
+                    f"Budget trop eleve (max ${self.MAX_BUDGET_USDT:,.0f})",
+                    error=True
+                )
+                return
+            database.set_setting("budget_securite", str(budget))
+            self._show_status(f"Budget Sécurité: ${budget:,.2f} USDT sauvegardé")
         except ValueError:
             self._show_status("Valeur invalide", error=True)
 
     def toggle_securite(self, value: bool):
-        self.securite_active = value
-        database.set_setting("auto_trade_securite", "true" if value else "false")
-        budget = float(database.get_setting("budget_securite", "0"))
-        if value:
-            if budget <= 0:
-                self._show_status(
-                    "Définissez d'abord un budget Sécurité > 0 !", error=True
-                )
-                self.securite_active = False
-                database.set_setting("auto_trade_securite", "false")
-                if hasattr(self.ids, "securite_switch"):
-                    Clock.schedule_once(
-                        lambda dt: setattr(self.ids.securite_switch, "active", False), 0
-                    )
-            else:
-                self._show_status(
-                    f"Portefeuille SÉCURITÉ activé — Budget: ${budget:,.2f} USDT"
-                )
-        else:
+        """Activer/désactiver le portefeuille legacy Sécurité.
+
+        Garde-fous identiques à toggle_master :
+          - Refus si budget <= 0
+          - Confirmation argent réel (double-tap) si paper_mode INACTIF
+          - Ordre : checks AVANT écriture DB (pas de race)
+        """
+        if not value:
+            # Désactivation : sans friction
+            database.set_setting("auto_trade_securite", "false")
+            self.securite_active = False
             self._show_status("Portefeuille Sécurité DÉSACTIVÉ")
+            return
+
+        # Activation : checks AVANT écrire DB
+        budget = float(database.get_setting("budget_securite", "0"))
+        if budget <= 0:
+            self._show_status("Définissez d'abord un budget Sécurité > 0 !", error=True)
+            self._revert_switch("securite_switch")
+            self.securite_active = False
+            return
+
+        # Confirmation argent réel
+        if not paper_mode.is_paper_mode():
+            if not getattr(self, "_securite_activate_confirmed", False):
+                self._securite_activate_confirmed = True
+                self._show_status(
+                    f"ATTENTION : ARGENT REEL ${budget:,.2f}. "
+                    "Re-cliquer le switch dans 5s pour CONFIRMER.",
+                    error=True
+                )
+                self._revert_switch("securite_switch")
+                self.securite_active = False
+                Clock.schedule_once(
+                    lambda dt: setattr(self, "_securite_activate_confirmed", False), 5
+                )
+                return
+            self._securite_activate_confirmed = False
+
+        # OK : écrire DB
+        database.set_setting("auto_trade_securite", "true")
+        self.securite_active = True
+        mode = "PAPER" if paper_mode.is_paper_mode() else "REEL"
+        self._show_status(
+            f"Portefeuille SECURITE active [{mode}] — Budget: ${budget:,.2f} USDT"
+        )
 
     # ─── Portefeuille Libre ───────────────────────────────────────────────────
 
@@ -549,11 +595,17 @@ class SettingsScreen(Screen):
             return
         try:
             budget = float(self.ids.budget_libre_input.text)
-            if budget >= 0:
-                database.set_setting("budget_libre", str(budget))
-                self._show_status(f"Budget Libre: ${budget:,.2f} USDT sauvegardé")
-            else:
-                self._show_status("Budget invalide", error=True)
+            if budget < 0:
+                self._show_status("Budget invalide (>= 0)", error=True)
+                return
+            if budget > self.MAX_BUDGET_USDT:
+                self._show_status(
+                    f"Budget trop eleve (max ${self.MAX_BUDGET_USDT:,.0f})",
+                    error=True
+                )
+                return
+            database.set_setting("budget_libre", str(budget))
+            self._show_status(f"Budget Libre: ${budget:,.2f} USDT sauvegardé")
         except ValueError:
             self._show_status("Valeur invalide", error=True)
 
@@ -571,26 +623,46 @@ class SettingsScreen(Screen):
             self._show_status("Valeur invalide", error=True)
 
     def toggle_libre(self, value: bool):
-        self.libre_active = value
-        database.set_setting("auto_trade_libre", "true" if value else "false")
-        budget = float(database.get_setting("budget_libre", "0"))
-        if value:
-            if budget <= 0:
-                self._show_status(
-                    "Définissez d'abord un budget Libre > 0 !", error=True
-                )
-                self.libre_active = False
-                database.set_setting("auto_trade_libre", "false")
-                if hasattr(self.ids, "libre_switch"):
-                    Clock.schedule_once(
-                        lambda dt: setattr(self.ids.libre_switch, "active", False), 0
-                    )
-            else:
-                self._show_status(
-                    f"Portefeuille LIBRE activé — Budget: ${budget:,.2f} USDT"
-                )
-        else:
+        """Activer/désactiver le portefeuille legacy Libre.
+
+        Garde-fous identiques à toggle_master + toggle_securite :
+        budget>0, confirmation argent réel, ordre des ops correct.
+        """
+        if not value:
+            database.set_setting("auto_trade_libre", "false")
+            self.libre_active = False
             self._show_status("Portefeuille Libre DÉSACTIVÉ")
+            return
+
+        budget = float(database.get_setting("budget_libre", "0"))
+        if budget <= 0:
+            self._show_status("Définissez d'abord un budget Libre > 0 !", error=True)
+            self._revert_switch("libre_switch")
+            self.libre_active = False
+            return
+
+        if not paper_mode.is_paper_mode():
+            if not getattr(self, "_libre_activate_confirmed", False):
+                self._libre_activate_confirmed = True
+                self._show_status(
+                    f"ATTENTION : ARGENT REEL ${budget:,.2f}. "
+                    "Re-cliquer le switch dans 5s pour CONFIRMER.",
+                    error=True
+                )
+                self._revert_switch("libre_switch")
+                self.libre_active = False
+                Clock.schedule_once(
+                    lambda dt: setattr(self, "_libre_activate_confirmed", False), 5
+                )
+                return
+            self._libre_activate_confirmed = False
+
+        database.set_setting("auto_trade_libre", "true")
+        self.libre_active = True
+        mode = "PAPER" if paper_mode.is_paper_mode() else "REEL"
+        self._show_status(
+            f"Portefeuille LIBRE active [{mode}] — Budget: ${budget:,.2f} USDT"
+        )
 
     def sync_binance_balance(self):
         """Synchronise le solde réel depuis Binance."""
