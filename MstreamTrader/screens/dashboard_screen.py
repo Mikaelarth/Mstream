@@ -67,7 +67,11 @@ class DashboardScreen(Screen):
         self.status_text = "Actualisation..."
         prices = market_data.get_prices()
         if not prices:
-            self.status_text = "Hors ligne — dernières données"
+            err = market_data.last_fetch_error or "réseau indisponible"
+            # Tronquer pour rester lisible dans la status bar
+            if len(err) > 80:
+                err = err[:77] + "..."
+            self.status_text = f"Hors ligne : {err}"
             return
 
         self._prices = prices

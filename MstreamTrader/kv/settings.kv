@@ -23,7 +23,7 @@
                     pos: self.pos
                     size: self.size
             Label:
-                text: "[b]⚙ Configuration[/b]"
+                text: "[b]Configuration[/b]"
                 markup: True
                 font_size: dp(20)
                 color: 1, 1, 1, 1
@@ -38,7 +38,7 @@
 
                 # Section Binance
                 Label:
-                    text: "[b]🔑 CONNEXION BINANCE[/b]"
+                    text: "[b]CONNEXION BINANCE[/b]"
                     markup: True
                     font_size: dp(13)
                     color: 0.4, 0.75, 1, 1
@@ -85,7 +85,7 @@
                     multiline: False
 
                 Button:
-                    text: "💾 Sauvegarder & Tester la connexion"
+                    text: "Sauvegarder & Tester la connexion"
                     size_hint_y: None
                     height: dp(44)
                     background_color: 0.1, 0.4, 0.8, 1
@@ -93,7 +93,7 @@
                     on_press: root.save_api_keys()
 
                 Button:
-                    text: "🔄 Synchroniser solde depuis Binance"
+                    text: "Synchroniser solde depuis Binance"
                     size_hint_y: None
                     height: dp(38)
                     background_color: 0.1, 0.3, 0.6, 1
@@ -102,7 +102,7 @@
 
                 # Section Solde initial
                 Label:
-                    text: "[b]💰 CAPITAL DE TRADING[/b]"
+                    text: "[b]CAPITAL DE TRADING[/b]"
                     markup: True
                     font_size: dp(13)
                     color: 0.4, 0.75, 1, 1
@@ -131,16 +131,17 @@
                         input_filter: "float"
                         multiline: False
                     Button:
-                        text: "✓"
+                        text: "OK"
                         size_hint_x: None
                         width: dp(50)
                         background_color: 0.0, 0.6, 0.3, 1
-                        font_size: dp(18)
+                        font_size: dp(14)
+                        bold: True
                         on_press: root.save_balance()
 
                 # Section Risque
                 Label:
-                    text: "[b]🛡 GESTION DU RISQUE[/b]"
+                    text: "[b]GESTION DU RISQUE[/b]"
                     markup: True
                     font_size: dp(13)
                     color: 0.4, 0.75, 1, 1
@@ -169,16 +170,17 @@
                         input_filter: "float"
                         multiline: False
                     Button:
-                        text: "✓"
+                        text: "OK"
                         size_hint_x: None
                         width: dp(50)
                         background_color: 0.0, 0.6, 0.3, 1
-                        font_size: dp(18)
+                        font_size: dp(14)
+                        bold: True
                         on_press: root.save_risk_settings()
 
                 # Section Auto-Trade
                 Label:
-                    text: "[b]🤖 TRADING AUTOMATIQUE[/b]"
+                    text: "[b]TRADING AUTOMATIQUE[/b]"
                     markup: True
                     font_size: dp(13)
                     color: 0.4, 0.75, 1, 1
@@ -220,7 +222,7 @@
                             size: self.size
 
                 Label:
-                    text: "[b]🤖 BOT MAÎTRE — TRADING AUTONOME[/b]"
+                    text: "[b]BOT MAÎTRE — TRADING AUTONOME[/b]"
                     markup: True
                     font_size: dp(14)
                     color: 0.0, 0.9, 0.45, 1
@@ -265,11 +267,12 @@
                         input_filter: "float"
                         multiline: False
                     Button:
-                        text: "✓ Allouer"
+                        text: "Allouer"
                         size_hint_x: None
                         width: dp(80)
                         background_color: 0.0, 0.55, 0.25, 1
                         font_size: dp(12)
+                        bold: True
                         on_press: root.save_budget_master()
 
                 Label:
@@ -293,11 +296,12 @@
                         input_filter: "float"
                         multiline: False
                     Button:
-                        text: "✓"
+                        text: "OK"
                         size_hint_x: None
                         width: dp(50)
                         background_color: 0.0, 0.55, 0.25, 1
-                        font_size: dp(18)
+                        font_size: dp(14)
+                        bold: True
                         on_press: root.save_risk_master()
 
                 BoxLayout:
@@ -324,7 +328,7 @@
                         on_active: root.toggle_master(self.active)
 
                 Button:
-                    text: "↺ Réinitialiser le capital initial (point de référence ROI)"
+                    text: "Réinitialiser le capital initial (point de référence ROI)"
                     size_hint_y: None
                     height: dp(36)
                     background_color: 0.15, 0.15, 0.15, 1
@@ -500,7 +504,7 @@
                             size: self.size
 
                 Label:
-                    text: "[b]📝 PAPER TRADING (mode simulation)[/b]"
+                    text: "[b]PAPER TRADING (mode simulation)[/b]"
                     markup: True
                     font_size: dp(14)
                     color: 0.95, 0.7, 0.1, 1
@@ -580,7 +584,7 @@
                             size: self.size
 
                 Label:
-                    text: "[b]📨 NOTIFICATIONS TELEGRAM[/b]"
+                    text: "[b]NOTIFICATIONS TELEGRAM[/b]"
                     markup: True
                     font_size: dp(14)
                     color: 0.2, 0.7, 1, 1
@@ -674,7 +678,7 @@
                             size: self.size
 
                 Label:
-                    text: "[b]🛑 EMERGENCY STOP[/b]"
+                    text: "[b]EMERGENCY STOP[/b]"
                     markup: True
                     font_size: dp(14)
                     color: 0.95, 0.3, 0.2, 1
@@ -692,7 +696,7 @@
                     text_size: self.width, None
 
                 Button:
-                    text: "[b]🛑 FERMER TOUTES LES POSITIONS[/b]"
+                    text: "[b]FERMER TOUTES LES POSITIONS (urgence)[/b]"
                     markup: True
                     size_hint_y: None
                     height: dp(48)
@@ -712,7 +716,7 @@
                             size: self.size
 
                 Label:
-                    text: "[b]🔬 BACKTEST ENGINE[/b]"
+                    text: "[b]BACKTEST ENGINE[/b]"
                     markup: True
                     font_size: dp(14)
                     color: 0.65, 0.55, 1, 1
@@ -757,22 +761,22 @@
                     pos: self.pos
                     size: self.size
             Button:
-                text: "◉ Dashboard"
+                text: "Dashboard"
                 background_color: 0.12, 0.12, 0.18, 0
                 font_size: dp(12)
                 on_press: app.root.current = "dashboard"
             Button:
-                text: "⚡ Signaux"
+                text: "Signaux"
                 background_color: 0.12, 0.12, 0.18, 0
                 font_size: dp(12)
                 on_press: app.root.current = "signals"
             Button:
-                text: "💼 Portfolio"
+                text: "Portfolio"
                 background_color: 0.12, 0.12, 0.18, 0
                 font_size: dp(12)
                 on_press: app.root.current = "portfolio"
             Button:
-                text: "[b]⚙ Config[/b]"
+                text: "[b]Config[/b]"
                 markup: True
                 background_color: 0.0, 0.50, 0.25, 1
                 font_size: dp(12)

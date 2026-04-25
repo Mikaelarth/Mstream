@@ -9,7 +9,9 @@ source.include_patterns = kv/*,assets/*,core/*.py,screens/*.py
 
 version = 1.0.0
 
-requirements = python3,kivy==2.3.0
+# Important : openssl + certifi obligatoires pour que urllib HTTPS fonctionne
+# sur Android (sinon SSL: CERTIFICATE_VERIFY_FAILED, fetch CoinGecko/Binance KO)
+requirements = python3,kivy==2.3.0,openssl,certifi
 
 orientation = portrait
 fullscreen = 0

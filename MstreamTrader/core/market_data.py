@@ -4,9 +4,47 @@ Utilise l'API CoinGecko (gratuite, sans clé API)
 """
 
 import json
+import logging
+import os
+import ssl
 import urllib.request
 import urllib.error
 from datetime import datetime
+
+logger = logging.getLogger("market_data")
+
+# Dernière erreur fetch (exposable à l'UI pour debug runtime)
+last_fetch_error: str = ""
+
+
+def _build_ssl_context() -> "ssl.SSLContext | None":
+    """
+    Construit un contexte SSL robuste qui marche aussi sur Android.
+
+    Sur Android, ssl.create_default_context() peut échouer si les
+    certificats systèmes ne sont pas trouvés. On essaie certifi, puis
+    le bundle système, sinon on crée un contexte standard.
+    """
+    try:
+        # 1. certifi (recommandé sur Android)
+        try:
+            import certifi
+            return ssl.create_default_context(cafile=certifi.where())
+        except ImportError:
+            pass
+        # 2. Bundle système Android typique
+        for ca in ("/etc/security/cacerts", "/system/etc/security/cacerts"):
+            if os.path.isdir(ca):
+                ctx = ssl.create_default_context(capath=ca)
+                return ctx
+        # 3. Defaut
+        return ssl.create_default_context()
+    except (ssl.SSLError, OSError) as exc:
+        logger.warning(f"SSL context fallback : {exc}")
+        return None
+
+
+_SSL_CTX = _build_ssl_context()
 
 
 COINGECKO_BASE = "https://api.coingecko.com/api/v3"
@@ -27,16 +65,38 @@ CURRENCY = "usd"
 
 
 def _fetch_json(url: str, timeout: int = 10) -> dict | list | None:
-    """Effectue une requête HTTP GET et retourne le JSON parsé."""
+    """
+    Effectue une requête HTTP GET et retourne le JSON parsé.
+
+    En cas d'échec, l'erreur est loggée ET stockée dans `last_fetch_error`
+    pour que l'UI puisse la montrer (utile sur Android où on n'a pas accès
+    facilement aux logs Python).
+    """
+    global last_fetch_error
     try:
         req = urllib.request.Request(
             url,
             headers={"User-Agent": "MstreamTrader/1.0"}
         )
-        with urllib.request.urlopen(req, timeout=timeout) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, Exception):
-        return None
+        with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CTX) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            last_fetch_error = ""
+            return data
+    except urllib.error.HTTPError as e:
+        last_fetch_error = f"HTTP {e.code} {e.reason} - {url[:60]}"
+        logger.warning(last_fetch_error)
+    except urllib.error.URLError as e:
+        # SSL, DNS, timeout, no route, etc.
+        reason = getattr(e, "reason", str(e))
+        last_fetch_error = f"URL error : {reason} - {url[:60]}"
+        logger.warning(last_fetch_error)
+    except (json.JSONDecodeError, ValueError) as e:
+        last_fetch_error = f"JSON parse : {e} - {url[:60]}"
+        logger.warning(last_fetch_error)
+    except OSError as e:
+        last_fetch_error = f"OS error : {e}"
+        logger.warning(last_fetch_error)
+    return None
 
 
 def get_prices(coin_ids: list[str] | None = None) -> dict:

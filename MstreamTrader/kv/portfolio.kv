@@ -23,7 +23,7 @@
                     pos: self.pos
                     size: self.size
             Label:
-                text: "[b]💼 Portefeuille[/b]"
+                text: "[b]Portefeuille[/b]"
                 markup: True
                 font_size: dp(20)
                 color: 1, 1, 1, 1
@@ -181,7 +181,7 @@
                         size_hint_y: None
                         height: dp(28)
                         Label:
-                            text: "[b]🤖 BOT MAÎTRE[/b]"
+                            text: "[b]BOT MAÎTRE[/b]"
                             markup: True
                             font_size: dp(14)
                             color: 0.0, 0.9, 0.45, 1
@@ -377,9 +377,10 @@
                     height: dp(48)
                     padding: [dp(10), dp(4)]
                     Button:
-                        text: "📤 Export CSV des trades"
+                        text: "Export CSV des trades"
                         background_color: 0.20, 0.45, 0.55, 1
-                        font_size: dp(12)
+                        font_size: dp(13)
+                        bold: True
                         on_press: root.export_trades_csv()
 
                 # ── Positions / Historique / Journal (hauteurs fixes) ──
@@ -448,23 +449,23 @@
                     pos: self.pos
                     size: self.size
             Button:
-                text: "◉ Dashboard"
+                text: "Dashboard"
                 background_color: 0.12, 0.12, 0.18, 0
                 font_size: dp(12)
                 on_press: app.root.current = "dashboard"
             Button:
-                text: "⚡ Signaux"
+                text: "Signaux"
                 background_color: 0.12, 0.12, 0.18, 0
                 font_size: dp(12)
                 on_press: app.root.current = "signals"
             Button:
-                text: "[b]💼 Portfolio[/b]"
+                text: "[b]Portfolio[/b]"
                 markup: True
                 background_color: 0.0, 0.50, 0.25, 1
                 font_size: dp(12)
                 on_press: app.root.current = "portfolio"
             Button:
-                text: "⚙ Config"
+                text: "Config"
                 background_color: 0.12, 0.12, 0.18, 0
                 font_size: dp(12)
                 on_press: app.root.current = "settings"

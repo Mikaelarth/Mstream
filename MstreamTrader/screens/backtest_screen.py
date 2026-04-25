@@ -41,7 +41,7 @@ class BacktestScreen(Screen):
 
         # Header
         root.add_widget(Label(
-            text="[b]🔬 Backtest Engine[/b]",
+            text="[b]Backtest Engine[/b]",
             markup=True, font_size=dp(20),
             size_hint_y=None, height=dp(40),
             color=(0.9, 0.9, 1, 1),
@@ -85,10 +85,11 @@ class BacktestScreen(Screen):
 
         # Bouton Lancer
         run_btn = Button(
-            text="▶ Lancer Backtest",
+            text="Lancer Backtest",
             size_hint_y=None, height=dp(50),
             background_color=(0.0, 0.55, 0.85, 1),
             font_size=dp(15),
+            bold=True,
         )
         run_btn.bind(on_press=lambda *_: self._start_backtest())
         root.add_widget(run_btn)
@@ -119,11 +120,11 @@ class BacktestScreen(Screen):
 
         # Navigation footer
         nav = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(4))
-        for label, screen in [("📊 Dashboard", "dashboard"),
-                                ("⚡ Signaux", "signals"),
-                                ("💼 Portfolio", "portfolio"),
-                                ("⚙ Config", "settings")]:
-            b = Button(text=label, font_size=dp(11))
+        for label, screen in [("Dashboard", "dashboard"),
+                                ("Signaux", "signals"),
+                                ("Portfolio", "portfolio"),
+                                ("Config", "settings")]:
+            b = Button(text=label, font_size=dp(12))
             b.bind(on_press=lambda inst, s=screen: self._navigate(s))
             nav.add_widget(b)
         root.add_widget(nav)
@@ -155,7 +156,7 @@ class BacktestScreen(Screen):
         from threading import Thread
         self.is_running = True
         self._update_status("Téléchargement des données…", error=False)
-        self.report_summary = "⏳ Backtest en cours, patientez (~15-30 secondes)…"
+        self.report_summary = "Backtest en cours, patientez (~15-30 secondes)..."
         self._update_report_label()
         Thread(target=self._run_backtest_async,
                args=(days, capital, coins),
@@ -186,7 +187,7 @@ class BacktestScreen(Screen):
             result = bt.run(coins_data)
             r = result.report
             summary = (
-                f"✅ Backtest terminé\n\n"
+                f"Backtest terminé\n\n"
                 f"Capital initial : ${r['initial_capital']:,.2f}\n"
                 f"Capital final   : ${r['final_capital']:,.2f}\n"
                 f"Rendement total : {r['total_return_pct']:+.2f}%\n"
@@ -217,13 +218,15 @@ class BacktestScreen(Screen):
             Clock.schedule_once(lambda dt: setattr(self, "is_running", False), 0)
 
     def _show_success(self, text: str):
-        self._update_status("Backtest terminé ✓", error=False)
+        self._update_status("Backtest terminé", error=False)
         self.report_summary = text
         self._update_report_label()
 
     def _show_error(self, text: str):
+        # On affiche l'erreur dans le status uniquement, pas dans le rapport
+        # (évitait le doublon "Aucune donnée téléchargée" en bas)
         self._update_status(text, error=True)
-        self.report_summary = "❌ " + text
+        self.report_summary = "Aucun rapport — relancez après vérification."
         self._update_report_label()
 
     def _update_status(self, text: str, error: bool = False):

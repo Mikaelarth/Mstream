@@ -183,10 +183,10 @@
                 color: 0.45, 0.45, 0.45, 1
                 halign: "left"
             Button:
-                text: "↺"
+                text: "Refresh"
                 size_hint_x: None
-                width: dp(36)
-                font_size: dp(16)
+                width: dp(70)
+                font_size: dp(11)
                 background_color: 0, 0, 0, 0
                 color: 0.4, 0.7, 1, 1
                 on_press: root.force_refresh()
@@ -204,26 +204,26 @@
                     size: self.size
 
             Button:
-                text: "[b]◉ Dashboard[/b]"
+                text: "[b]Dashboard[/b]"
                 markup: True
                 background_color: 0.0, 0.50, 0.25, 1
                 font_size: dp(12)
                 on_press: app.root.current = "dashboard"
 
             Button:
-                text: "⚡ Signaux"
+                text: "Signaux"
                 background_color: 0.12, 0.12, 0.18, 0
                 font_size: dp(12)
                 on_press: app.root.current = "signals"
 
             Button:
-                text: "💼 Portfolio"
+                text: "Portfolio"
                 background_color: 0.12, 0.12, 0.18, 0
                 font_size: dp(12)
                 on_press: app.root.current = "portfolio"
 
             Button:
-                text: "⚙ Config"
+                text: "Config"
                 background_color: 0.12, 0.12, 0.18, 0
                 font_size: dp(12)
                 on_press: app.root.current = "settings"
