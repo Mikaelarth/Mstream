@@ -3,6 +3,10 @@
 > Le bot ne suit **pas une stratégie unique**. Il a **plusieurs
 > stratégies indépendantes** qui votent, et le **vote pondéré
 > évolue** selon ce que chaque stratégie a démontré (cf. doc 03).
+>
+> Il gère également **deux sous-portefeuilles** distincts :
+> **Actif** (capital de travail) et **Réserve** (sécurisation
+> progressive des bénéfices). Voir section dédiée plus bas.
 
 ---
 
@@ -206,6 +210,215 @@ MASTER_CONFIG = {
     ...
 }
 ```
+
+---
+
+## Architecture des portefeuilles : Actif / Réserve
+
+> Politique de **skim profit adaptatif** : le bot transfère
+> progressivement une partie de ses gains vers une Réserve sécurisée
+> (USDT), pour que les profits accumulés ne soient pas remis à risque.
+>
+> *Cette politique est la v1 ; elle est destinée à évoluer en fonction
+> du retour d'expérience.*
+
+### Définitions
+
+| Sous-portefeuille | Rôle | Forme | Localisation |
+|---|---|---|---|
+| **Actif** | Capital que le bot utilise pour trader (entrées, positions) | Cash + positions ouvertes | Compte spot Binance |
+| **Réserve** | Capital sécurisé, soustrait du risque marché | **USDT uniquement** | Compte spot Binance (même compte, sous-compte logique géré par le bot) |
+| **Capital total** | Actif + Réserve | mixte | – |
+
+### Politique de skim adaptative (paliers de capital)
+
+Le bot transfère vers la Réserve un pourcentage des **gains** réalisés
+sur la **semaine écoulée**, selon le palier où le capital total se
+situe par rapport au capital initial alloué.
+
+**Paliers** (capital initial alloué = K0 ; ex : K0 = 20 USD) :
+
+| Palier | Condition | % gains skim → Réserve |
+|:-:|---|:-:|
+| **P0 — Démarrage** | Capital total < 1.0 × K0 (encore en perte) | **0 %** (laisser le capital se reconstruire) |
+| **P1 — Vert** | 1.0 × K0 ≤ Capital total < 1.2 × K0 (gain modeste) | **30 %** |
+| **P2 — Croissance** | 1.2 × K0 ≤ Capital total < 2.0 × K0 (gain confirmé) | **50 %** |
+| **P3 — Doublement** | 2.0 × K0 ≤ Capital total < 5.0 × K0 | **70 %** |
+| **P4 — Excellence** | Capital total ≥ 5.0 × K0 | **80 %** |
+
+**Logique** : tant que le bot n'a pas prouvé qu'il sait gagner (P0),
+on lui laisse 100 % du capital pour qu'il puisse exister. À mesure
+qu'il gagne, on sécurise de plus en plus.
+
+### Cycle de skim : hebdomadaire
+
+- **Quand** : chaque dimanche à 23:00 UTC (cycle propre, hors heures
+  de marché crypto les plus volatiles)
+- **Calcul** :
+  - `actif_courant` = solde USDT libre Actif + valeur positions ouvertes
+  - `gains_semaine` = `actif_courant` - `actif_lundi_dernier` - `pertes_semaine`
+  - Si `gains_semaine > 0` : transfert = `gains_semaine × % skim du palier`
+  - Sinon : pas de transfert
+- **Action** : le bot exécute un transfert interne USDT
+  Actif → Réserve via le journal d'audit (pas un trade Binance, juste
+  un déplacement comptable dans la DB locale + tracking sur Binance)
+
+### Rebalancing exceptionnel : Réserve → Actif
+
+Le bot **peut** puiser dans la Réserve, mais sous **conditions strictes** :
+
+1. L'Actif est descendu **sous 50 % de K0** (perte sévère)
+2. La Réserve dispose d'**au moins K0** disponible
+3. Une **opportunité de marché à haute confiance** est détectée
+   (signal STRONG_BUY confluence MTF + ensemble unanime)
+4. Pas de rebalancing fait depuis ≥ 30 jours
+
+Si toutes les conditions sont remplies :
+- Transfert maximum = **30 %** de la Réserve disponible
+- **Audit obligatoire** dans `audit_log` avec `event_type = "REBALANCE_RESERVE_TO_ACTIVE"`
+- **Notification Telegram** au user (information, pas demande
+  d'autorisation — autonomie totale)
+
+### Verrouillage côté UI (politique v1)
+
+L'utilisateur **ne peut pas retirer la Réserve via l'app**. Pour
+récupérer cette Réserve :
+- Soit accepter qu'elle tourne dans la croissance composée du bot
+- Soit aller **directement sur Binance** (web ou app officielle) pour
+  retirer les USDT de son compte
+
+L'**Actif** reste retirable via l'app (mais avec confirmation
+double-tap si retrait > 50 % de l'Actif).
+
+**Justification de cette asymétrie** : éviter que l'utilisateur, dans
+un moment de stress (krach marché, peur), vide la Réserve et annule
+tous les bénéfices de la stratégie. Si on laisse la Réserve sur
+Binance directement, ajouter une étape volontaire est un garde-fou
+psychologique.
+
+> Cette politique évoluera (cf. Q5 user). Possibles évolutions :
+> - Ajouter un bouton "Récupérer ma Réserve" avec délai 24h + 2FA
+> - Permettre à l'utilisateur de définir lui-même son taux de skim
+> - Ajouter un mode "vacances" qui passe tout en Réserve
+
+### Affichage UX (côté `02_EXPERIENCE_UTILISATEUR.md`)
+
+L'écran Portfolio doit montrer **les deux sous-portefeuilles** côte
+à côte :
+
+```
+┌──────────────────────────────────────────────┐
+│  PORTFOLIO                                   │
+├──────────────────────────────────────────────┤
+│  Capital total : $24.30  (+21.5% vs initial) │
+│                                              │
+│  ┌─────────────────┐  ┌─────────────────┐   │
+│  │   🔵 ACTIF       │  │  🟢 RÉSERVE      │   │
+│  │   $18.50         │  │  $5.80          │   │
+│  │   Actif Bot      │  │  Verrouillée    │   │
+│  │   en mouvement   │  │  Bénéfices skim │   │
+│  └─────────────────┘  └─────────────────┘   │
+│                                              │
+│  Palier actif : P2 — Croissance              │
+│  Skim hebdo : 50% des gains                 │
+│  Prochain skim : Dimanche 23:00              │
+│                                              │
+│  Positions ouvertes : 1                      │
+│  ...                                         │
+└──────────────────────────────────────────────┘
+```
+
+### Implémentation technique
+
+Module à créer/étendre : `core/wallet_manager.py`
+
+```python
+class WalletManager:
+    """Gère la séparation Actif / Réserve et les flux de skim."""
+
+    def get_active_balance(self) -> float: ...
+    def get_reserve_balance(self) -> float: ...
+    def get_total_capital(self) -> float: ...
+    def get_palier(self) -> str: ...   # "P0".."P4"
+    def get_skim_pct(self) -> float: ...
+
+    def perform_weekly_skim(self) -> dict: ...
+    """Calcule gains semaine et déverse selon palier. Idempotent."""
+
+    def maybe_rebalance_reserve_to_active(self) -> dict | None: ...
+    """Vérifie les conditions, exécute si OK, audit obligatoire."""
+```
+
+Tables DB nouvelles :
+- `wallet_snapshots` : snapshot quotidien Actif/Réserve/total/palier
+- `skim_history` : historique des transferts hebdomadaires
+- `rebalance_history` : historique des rebalances exceptionnels
+
+---
+
+## Cold-start protocol (les 30 premiers jours en réel)
+
+Avec **20 USD et 0 trade live**, le bot ne peut pas utiliser un Kelly
+"plein" — il n'a aucune evidence statistique de son edge réel. Tous les
+backtest, walk-forward, et critères de R/R supposent que la distribution
+historique reste valide. **Le cold-start protocol force la prudence
+bayésienne**.
+
+### Règle du scaling progressif
+
+| Phase | Trades cumulés | Position size | Règle de validation pour passer à la phase suivante |
+|:-:|:-:|:-:|---|
+| **P0 — Probation** | 0 → 10 | **30 % du Kelly** capé à 1 USD | ≥ 60 % des trades sans erreur d'exécution + 0 anomalie data |
+| **P1 — Apprentissage** | 11 → 30 | **50 % du Kelly** capé à 2 USD | Expectancy estimée IC 95 % **exclut zéro** vers le haut |
+| **P2 — Confiance** | 31 → 100 | **75 % du Kelly** capé à 5 USD | Sharpe live ≥ 50 % du Sharpe walk-forward champion |
+| **P3 — Régime nominal** | 100+ | **Kelly fractionnel complet** (1/4 Kelly) | — |
+
+### Conditions de rétrogradation
+
+À tout moment, si :
+- 3 SL consécutifs **dans la phase courante** → retour à la phase
+  précédente (-1)
+- Drawdown > 15 % du capital initial → retour P0 forcé + notification
+- Drift détecté (cf. doc 10, R3) → maintien de la phase courante (pas
+  de promotion tant que le drift n'est pas résolu)
+
+### Garanties statistiques
+
+**Le passage de phase n'est jamais automatique sur compteur de trades
+seul**. Il exige **les deux** :
+1. Le seuil quantitatif (10 trades / 30 trades / 100 trades)
+2. La condition de validation associée (expectancy IC, Sharpe, etc.)
+
+→ Un bot qui a fait 30 trades mais dont l'expectancy IC contient zéro
+**reste en P1**, même si "30 trades" est atteint.
+
+### Plancher d'exécution
+
+**Binance min order ≈ 5 USD pour BTC/ETH**. Si la phase impose un cap
+< min order, on **skip le trade** plutôt que de violer la règle de cap.
+Mieux vaut moins de trades en cold-start que des trades sur-dimensionnés.
+
+### Affichage utilisateur
+
+Dans l'écran "État du bot" (doc 02), un bandeau permanent affiche :
+
+```
+🟡 Phase apprentissage P1 (trade 14/30)
+   Position size : 50 % du Kelly · cap 2 USD
+   Promotion P2 si : expectancy IC > 0 (actuel : −0.05 .. +0.32)
+```
+
+→ L'utilisateur **voit** que le bot est encore en mode prudent, et
+comprend pourquoi les positions sont petites au début.
+
+### Critères mesurables (CS1-CS4)
+
+| # | Critère | Validation |
+|:-:|---|---|
+| CS1 | Aucun trade > cap de phase courante | audit trail |
+| CS2 | Promotion uniquement si seuil + condition validation | audit trail |
+| CS3 | Rétrogradation effective ≤ 1 cycle après déclenchement | audit trail |
+| CS4 | Bandeau phase visible en permanence dans l'app | inspection UI |
 
 ---
 

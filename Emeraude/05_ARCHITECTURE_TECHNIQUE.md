@@ -40,11 +40,19 @@ python3, kivy==2.3.0, openssl, certifi
 
 ### Structure du projet
 
+> **Note de nommage** : l'application s'appelle officiellement
+> **Emeraude** (toutes les UI, notifications, rapports utilisent ce
+> nom). Le dossier code historique `MstreamTrader/` et le repo `Mstream`
+> conservent leur nom le temps d'un rename progressif (renommer du code
+> live = risque de casser l'historique git, les builds et la
+> persistence Android). Le rename complet repo + dossier est planifié
+> dans un palier ultérieur.
+
 ```
-Mstream/                              # Racine du repo
+Mstream/                              # Racine du repo (à renommer Emeraude)
 ├── Emeraude/                         # Cahier des charges (CE DOSSIER)
 ├── docs/                             # Doc historique technique
-├── MstreamTrader/                    # Code app (Buildozer "source.dir")
+├── MstreamTrader/                    # Code app — sera Emeraude/ après rename
 │   ├── main.py                       # Entry point Kivy app
 │   ├── run_backtest.py               # CLI backtest
 │   ├── optimize_params.py            # CLI grid search

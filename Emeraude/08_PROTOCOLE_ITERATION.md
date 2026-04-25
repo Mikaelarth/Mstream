@@ -10,13 +10,13 @@
 L'utilisateur demande une itération en utilisant l'une de ces formules :
 
 ```
-itération suivante MstreamTrader
+itération suivante Emeraude
 ```
 
 ou plus explicitement :
 
 ```
-fais une itération MstreamTrader. Lis Emeraude/, identifie l'objectif
+fais une itération Emeraude. Lis Emeraude/, identifie l'objectif
 chiffré le plus impactant, mesure avant/après, et reporte honnêtement.
 ```
 
@@ -93,7 +93,7 @@ Pour TOUT changement, vérifier :
 #### 5.1 Tests pytest 100 % verts
 
 ```bash
-cd MstreamTrader
+cd MstreamTrader   # nom du dossier code (pour rappel : l'app s'appelle Emeraude, le dossier code historique reste MstreamTrader le temps du rename progressif)
 py -3.12 -m pytest tests/ -q
 # Doit afficher "311 passed" (ou plus si tests ajoutés)
 ```

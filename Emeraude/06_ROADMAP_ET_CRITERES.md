@@ -9,21 +9,18 @@
 ## Schéma global
 
 ```
-   ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
-   │ Palier 0│ →  │ Palier 1│ →  │ Palier 2│ →  │ Palier 3│ →  │ Palier 4│
-   │ État    │    │ Trading │    │ Stabili-│    │ Calibra-│    │ Sécurité│
-   │ courant │    │ réel    │    │ sation  │    │ tion    │    │ produc- │
-   │         │    │ 20 USD  │    │ 30 jours│    │ alpha   │    │ tion    │
-   └─────────┘    └─────────┘    └─────────┘    └─────────┘    └─────────┘
-                                                                     │
-                                                                     ▼
-                                                              ┌─────────┐
-                                                              │ Palier 5│
-                                                              │ Crois-  │
-                                                              │ sance   │
-                                                              │ capital │
-                                                              └─────────┘
+  P0           P1            P2            P3            P4            P5            P6
+  ──           ──            ──            ──            ──            ──            ──
+  État    →  Trading    →  Stabili-  →  Calibra-  →  Sécurité  →  Crois-     →  Niveau
+  courant    réel          sation       tion         produc-       sance         entreprise
+             20 USD        30 jours     alpha        tion          capital       validé
+                                                                                  (6-12 mois)
 ```
+
+Chaque palier ajoute des features **et** des critères mesurables.
+Le palier "Niveau Entreprise" (P6) est l'objectif final : engagement
+chiffré sur SLA, sécurité hardware-backed, autonomie utilisateur
+totale.
 
 ---
 
@@ -305,39 +302,254 @@ capital hors bot (en USD libre sur Binance).
 
 ---
 
-## Tableau récapitulatif des 20 critères de terminaison
+## Palier 6 — Niveau Entreprise validé
 
-| # | Critère | État aujourd'hui |
-|:-:|---|:-:|
-| 1 | Tests pytest 100 % | ✅ 311/311 |
-| 2 | CI verte | ✅ |
-| 3 | App desktop sans crash 1h | ✅ |
-| 4 | APK Android sans crash 24h | 🔴 jamais testé |
-| 5 | Persistance vérifiée runtime | 🔴 (code OK, capture user manquante) |
-| 6 | Connexion Binance vérifiée | 🔴 (code OK, capture user manquante) |
-| 7 | Backtest produit trades réalistes | ✅ |
-| 8 | Walk-forward Sharpe avg ≥ 0.5 | ✅ +0.93 |
-| 9 | Walk-forward PF avg ≥ 1.2 | ✅ 3.03 |
-| 10 | Walk-forward consistency ≥ 50 % | 🔴 40 % |
-| 11 | Max Drawdown < 20 % | ✅ |
-| 12 | 0 fuite de clé API | ✅ |
-| 13 | Confirmation argent réel sur tous toggles | ✅ |
-| 14 | Audit trail JSON complet | ✅ |
-| 15 | Backup DB + restore validé | ✅ |
-| 16 | Documentation à jour | ✅ |
-| 17 | README clair | ✅ |
-| 18 | Paper mode tourné > 1h sans incident | 🔴 |
-| 19 | Notifications Telegram opérationnelles | 🔴 (user pas accès) |
-| 20 | Health check production | ✅ |
+### Objectif
 
-**Score actuel** : 13/20 ✅, 0 ⚠️, 7 🔴
+L'app a atteint et **maintient** le niveau de service défini dans
+[09_NIVEAU_ENTREPRISE.md](09_NIVEAU_ENTREPRISE.md). C'est l'objectif
+ultime du projet : être un **outil sur lequel l'utilisateur peut
+compter 24/7 sans rien savoir des détails techniques**.
 
-**Pour passer en argent réel (palier 1)** : critères #4, #5, #6, #18
-doivent passer ✅ minimum. #19 nullable car notif optionnelle.
+### Conditions de passage
 
-**Pour considérer "meilleur des meilleurs"** : tous ces critères + le
-walk-forward consistency #10 doit passer (refonte palier 3).
+Tous les critères E1-E20 ✅ pendant **3 mois consécutifs**.
+
+### Travaux nécessaires (chronologie)
+
+#### Mois 1-3 — Implémentation des fonctionnalités enterprise
+
+| Mois | Action | Critère(s) débloqué(s) |
+|---|---|---|
+| 1 | Architecture Actif/Réserve + skim hebdo | E12, E13 |
+| 1 | WalletManager module + tests pytest | – |
+| 1 | Onboarding wizard 4 étapes | E6 |
+| 2 | Rapports Telegram (quotidien + hebdo) | E9, E10 |
+| 2 | Export PDF/CSV mensuel | E11 |
+| 2 | Refus clé API avec WITHDRAW | E19 |
+| 3 | Migration Android KeyStore | E7 |
+| 3 | 2FA biométrique sur toggles critiques | E8 |
+| 3 | Mode "Explication" sur tous les écrans | UX bonus |
+
+#### Mois 4-6 — Mesure des SLA
+
+| Mois | Action | Critère(s) débloqué(s) |
+|---|---|---|
+| 4 | Profiling mémoire continu | E3 |
+| 4 | Mesure batterie réelle 30j | E4 |
+| 4 | Mesure latence cycle | E5 |
+| 5 | Test forcé recovery | E2 |
+| 5 | Mesure DB sur 90j d'usage | E16 |
+| 6 | Mesure uptime 30 jours glissants | E1 |
+
+#### Mois 7-12 — Maintien et raffinement
+
+À cette phase, l'app **doit** simplement **continuer à tourner** en
+tenant tous ses SLA. Toute régression mesurée est un incident à
+traiter en priorité.
+
+L'utilisateur doit vivre une expérience qui **devient invisible** :
+il ouvre l'app de temps en temps, regarde son ROI, et c'est tout.
+
+### Critères de succès final
+
+- ✅ 100 % des critères T1-T20 atteints
+- ✅ 100 % des critères E1-E20 atteints sur 3 mois consécutifs
+- ✅ Capital total > 1.5× capital initial (= bot a vraiment fait gagner
+  de l'argent net après tous les frais)
+- ✅ Témoignage utilisateur : "Je n'y pense plus, ça tourne tout seul"
+
+### Si on n'y arrive pas en 12 mois
+
+Honnêtement, le projet doit accepter qu'il **n'a pas atteint le
+niveau entreprise** et soit :
+- Continuer (palier 7+ improvisé) avec patience
+- Reconnaître publiquement (dans README et docs/PROJECT_STATE) que le
+  niveau cible n'est pas tenu, et ajuster la promesse
+
+**Pas de mensonge** sur l'état d'atteinte des SLA.
 
 ---
 
-*v1.0 — 2026-04-25*
+## Tableau récapitulatif des critères de terminaison
+
+### Critères MVP (T1-T20) — état actuel
+
+| # | Critère | État aujourd'hui |
+|:-:|---|:-:|
+| T1 | Tests pytest 100 % | ✅ 311/311 |
+| T2 | CI verte | ✅ |
+| T3 | App desktop sans crash 1h | ✅ |
+| T4 | APK Android sans crash 24h | 🔴 jamais testé |
+| T5 | Persistance vérifiée runtime | 🔴 |
+| T6 | Connexion Binance vérifiée | 🔴 |
+| T7 | Backtest produit trades réalistes | ✅ |
+| T8 | Walk-forward Sharpe avg ≥ **1.5** *(durci 0.5 → 1.5)* | 🔴 0.93 |
+| T9 | Walk-forward PF avg ≥ **1.8** sur **tous les régimes** *(durci 1.2 → 1.8)* | ⚠️ 3.03 moyenne, à vérifier par régime |
+| T10 | Walk-forward consistency ≥ **65 %** *(durci 50 → 65)* | 🔴 40 % |
+| T8b | Beat HODL BTC sur 90j glissants | 🔴 jamais mesuré |
+| T11 | Max Drawdown < 20 % | ✅ |
+| T12 | 0 fuite de clé API | ✅ |
+| T13 | Confirmation argent réel sur tous toggles | ✅ |
+| T14 | Audit trail JSON complet | ✅ |
+| T15 | Backup DB + restore validé | ✅ |
+| T16 | Documentation à jour | ✅ |
+| T17 | README clair | ✅ |
+| T18 | Paper mode tourné > 1h sans incident | 🔴 |
+| T19 | Notifications Telegram opérationnelles | 🔴 |
+| T20 | Health check production | ✅ |
+
+### Critères Niveau Entreprise (E1-E20) — état actuel
+
+> Ces critères sont issus de [09_NIVEAU_ENTREPRISE.md](09_NIVEAU_ENTREPRISE.md).
+> Ils définissent le passage de "MVP fonctionnel" à "outil de niveau
+> entreprise réel". Engagement à 6-12 mois.
+
+| # | Critère | État aujourd'hui |
+|:-:|---|:-:|
+| E1 | Uptime ≥ 99 % sur 30 jours glissants | 🔴 jamais mesuré |
+| E2 | Recovery automatique < 60 sec après crash | ⚠️ code OK, jamais validé runtime |
+| E3 | Empreinte mémoire ≤ 200 MB | 🔴 jamais profilé |
+| E4 | Consommation batterie ≤ 3 % / 24h | 🔴 jamais mesuré |
+| E5 | Cycle complet ≤ 30 sec | ⚠️ probablement OK, à mesurer |
+| E6 | Onboarding < 5 min pour novice | 🔴 wizard pas encore créé |
+| E7 | Clés API en KeyStore (pas DB) | 🔴 PBKDF2+XOR actuel |
+| E8 | 2FA biométrique sur actions critiques | 🔴 |
+| E9 | Rapport quotidien Telegram | 🔴 pas implémenté |
+| E10 | Rapport hebdo Telegram | 🔴 |
+| E11 | Rapport mensuel PDF/CSV exportable | 🔴 |
+| E12 | Architecture Actif/Réserve fonctionnelle | 🔴 pas implémentée |
+| E13 | Skim hebdomadaire automatique | 🔴 |
+| E14 | Audit forensique queryable | ✅ (déjà via `audit.query_events`) |
+| E15 | Circuit Breaker 4 niveaux validé runtime | ⚠️ code OK, jamais déclenché en réel |
+| E16 | DB ≤ 50 MB après 90j usage | 🔴 jamais mesuré |
+| E17 | APK ≤ 50 MB | ✅ ~35 MB actuel |
+| E18 | Aucune fuite de secret en logs | ✅ |
+| E19 | Refus si clé API a WITHDRAW | 🔴 pas vérifié |
+| E20 | Backup DB chiffré + restore validé runtime | ⚠️ tests pytest OK, runtime user manquant |
+
+### Critères Edge concurrentiel (I1-I12) — état actuel
+
+> Ces critères sont issus de [10_INNOVATIONS_ET_EDGE.md](10_INNOVATIONS_ET_EDGE.md).
+> Ils mesurent **l'avance technique** par rapport aux bots retail
+> standards. Sans eux, Emeraude reste un "bot correct" et non
+> "le meilleur des meilleurs".
+
+| # | Critère | État aujourd'hui |
+|:-:|---|:-:|
+| I1 | ECE de calibration < 5 % sur 100 trades | 🔴 module pas créé |
+| I2 | Écart backtest adversarial vs réel ≤ 15 % | ⚠️ backtest standard OK, mode adversarial à coder |
+| I3 | Drift détecté ≤ 72h sur injection synthétique | 🔴 module pas créé |
+| I4 | Champion robuste à ±20 % perturbation paramètres | ⚠️ walk-forward OK, robustness check à ajouter |
+| I5 | Max DD réel ≤ 1.2 × CVaR_99 | 🔴 VaR Gaussienne actuelle, tail risk à coder |
+| I6 | Microstructure apporte ≥ +0.1 Sharpe | 🔴 module pas créé |
+| I7 | Régime stress corrélation détecté ≤ 1 cycle | ⚠️ corrélation OK, seuil stress à ajouter |
+| I8 | Meta-gate réduit trades ≥ 30 % sans baisse PnL | 🔴 module pas créé |
+| I9 | Slippage moyen ≤ 0.05 % par trade | 🔴 exécution market pure actuelle |
+| I10 | 100 % états critiques restaurés après kill -9 | ⚠️ checkpoint OK, learning_history à étendre |
+| I11 | 0 % updates de poids sur < 30 trades (Hoeffding) | 🔴 garde-fou statistique à ajouter |
+| I12 | Dashboard performance lisible ≤ 5 s | 🔴 écran performance à créer |
+
+### Critères Intégrité données (D1-D6) — état actuel
+
+> Issus de [11_INTEGRITE_DONNEES.md](11_INTEGRITE_DONNEES.md). Sans
+> intégrité, **toutes** les autres métriques (Sharpe, ECE, walk-forward)
+> sont suspectes.
+
+| # | Critère | État aujourd'hui |
+|:-:|---|:-:|
+| D1 | Test no-lookahead vert sur 100 % modules signal | 🔴 test pas créé |
+| D2 | Backtest produit header avec snapshot d'univers | 🔴 |
+| D3 | ≥ 1 événement `bar_quality_warning` / mois en audit | 🔴 module pas créé |
+| D4 | 0 cycle sans flag `data_quality` rempli | 🔴 |
+| D5 | Test no-naive-datetime vert | 🔴 test pas créé |
+| D6 | 2 runs identiques → hash sortie identique | 🔴 snapshot pas codé |
+
+### Critères Cold-start (CS1-CS4) — état actuel
+
+> Issus de [04_STRATEGIES_TRADING.md](04_STRATEGIES_TRADING.md) §
+> Cold-start protocol. Garantit la prudence bayésienne sur les 30
+> premiers jours en réel.
+
+| # | Critère | État aujourd'hui |
+|:-:|---|:-:|
+| CS1 | Aucun trade > cap de phase courante | 🔴 phases pas implémentées |
+| CS2 | Promotion uniquement si seuil + condition validation | 🔴 |
+| CS3 | Rétrogradation effective ≤ 1 cycle | 🔴 |
+| CS4 | Bandeau phase visible en permanence | 🔴 UI pas créée |
+
+### Critères Graceful degradation (G1-G4) — état actuel
+
+> Issus de [09_NIVEAU_ENTREPRISE.md](09_NIVEAU_ENTREPRISE.md) §
+> Graceful degradation. Comportement défini en zone grise (Binance
+> half-broken, Telegram down, etc.).
+
+| # | Critère | État aujourd'hui |
+|:-:|---|:-:|
+| G1 | Matrice testable via simulation mock | 🔴 tests pas créés |
+| G2 | Transition d'état dégradé ≤ 1 cycle | 🔴 logique pas codée |
+| G3 | 0 entrée nouvelle en état FREEZE/EXITS_ONLY | 🔴 |
+| G4 | Retour à NORMAL automatique quand deps OK | 🔴 |
+
+### Critères Human override (H1-H4) — état actuel
+
+> Issus de [02_EXPERIENCE_UTILISATEUR.md](02_EXPERIENCE_UTILISATEUR.md) §
+> Human override. Garantit l'absence de conflit auto/manuel.
+
+| # | Critère | État aujourd'hui |
+|:-:|---|:-:|
+| H1 | Overrides loggés `audit_log` type `manual_*` | ⚠️ partiellement (fermeture manuelle existe) |
+| H2 | Réconciliation DB ↔ Binance à chaque cycle | 🔴 pas implémentée |
+| H3 | 0 conflit auto/manuel non détecté / 30j | 🔴 jamais mesuré |
+| H4 | Stop d'urgence ferme 100 % positions ≤ 30 s | 🔴 bouton pas créé |
+
+### Critères Champion lifecycle (CL1-CL4) — état actuel
+
+> Issus de [10_INNOVATIONS_ET_EDGE.md](10_INNOVATIONS_ET_EDGE.md) § 7.
+> Empêche un champion obsolète de continuer à trader en aveugle.
+
+| # | Critère | État aujourd'hui |
+|:-:|---|:-:|
+| CL1 | Re-validation 1×/mois minimum | 🔴 module pas créé |
+| CL2 | Transition d'état ≤ 1 cycle | 🔴 |
+| CL3 | Aucun champion EXPIRÉ en sizing nominal | 🔴 |
+| CL4 | `champion_history` liste tous les champions passés | 🔴 table pas créée |
+
+### Score consolidé
+
+**MVP** (T1-T20+T8b) : 12/21 ✅ *(durcissement T8/T9/T10 → 3 critères qui repassent en 🔴)*
+**Niveau Entreprise** (E1-E20) : 1/20 ✅ + 4 ⚠️ (palier 6)
+**Edge concurrentiel** (I1-I12) : 0/12 ✅ + 4 ⚠️ (palier 7)
+**Intégrité données** (D1-D6) : 0/6 (palier 7 — bloquant)
+**Cold-start** (CS1-CS4) : 0/4 (palier 1 — bloquant trading réel)
+**Champion lifecycle** (CL1-CL4) : 0/4 (palier 7)
+**Graceful degradation** (G1-G4) : 0/4 (palier 6)
+**Human override** (H1-H4) : 0/4 + 1 ⚠️ (palier 1-2)
+
+**Score global** : **13/75 ✅** des critères "le meilleur des meilleurs"
+
+> **Note d'honnêteté** : le score baisse encore (14/66 → 13/75) parce
+> que (a) on durcit 3 cibles walk-forward sur la barre institutionnelle
+> au lieu de la barre molle, et (b) on formalise 8 nouveaux critères
+> (G1-G4 + H1-H4). C'est la **rigueur qui monte**, pas la qualité qui
+> baisse. Préférer 13/75 honnête à 14/52 fantaisiste.
+
+### Conditions de passage par palier
+
+- **→ Palier 1 (trading réel 20 USD)** : T4, T5, T6, T18 ✅ minimum
+- **→ Palier 2 (stabilisation 30j)** : tous les T1-T20 ✅
+- **→ Palier 3 (calibration alpha)** : T10 ✅ + ajout E12, E13 ✅
+- **→ Palier 4 (sécurité production)** : E7, E8, E20 ✅
+- **→ Palier 5 (croissance capital)** : E1-E5 (SLA opérationnels) ✅
+- **→ Palier 6 (Niveau Entreprise validé)** : tous les T1-T20 et E1-E20 ✅
+- **→ Palier 7 (Edge concurrentiel)** : tous les I1-I12 + D1-D6 + CL1-CL4 ✅
+  - Phase A (intégrité données) : D1-D6 ✅ — **prérequis tous les autres**
+  - Phase B (fondations stat) : I1, I5, I11, I12 ✅
+  - Phase C (régime) : I3, I7, I8 ✅
+  - Phase D (exécution) : I2, I6, I9 ✅
+  - Phase E (mémoire + lifecycle) : I4, I10, CL1-CL4 ✅
+- **→ Trading réel sécurisé** (préalable au palier 1) : tous les CS1-CS4 ✅
+
+---
+
+*v1.3 — 2026-04-25 — durcissement T8/T9/T10 (cibles institutionnelles) + ajout T8b, G1-G4 (degradation), H1-H4 (override). Score 13/75.*

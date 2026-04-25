@@ -233,7 +233,36 @@ malchance.
    (decay 0.95 par trade).
 4. **Reset opt-in** : l'utilisateur peut **réinitialiser** la mémoire
    d'apprentissage si elle est devenue clairement aberrante.
+5. **Hoeffding bounds** (cf. document 10, R11) : aucun update de
+   poids n'est appliqué tant que la différence observée n'est pas
+   statistiquement significative au seuil 95 %. Pas d'update sur le
+   bruit.
 
 ---
 
-*v1.0 — 2026-04-25*
+## Au-delà du bandit : techniques avancées
+
+Le bandit Thompson + UCB1 + RegimeMemory est notre **socle**, mais ce
+n'est pas suffisant pour atteindre le niveau "le meilleur des
+meilleurs". Le document **[10 — Innovations & Edge concurrentiel](10_INNOVATIONS_ET_EDGE.md)**
+détaille les **12 lacunes structurelles du trading retail** et nos
+**réponses concrètes** :
+
+- **R1 — Calibration tracking** : nos confiances doivent être
+  honnêtes (Brier score, ECE, reliability diagram)
+- **R3 — Drift detection** : Page-Hinkley + ADWIN sur la série des
+  R-multiples → détection silencieuse de la dégradation
+- **R5 — Risque de queue** : Cornish-Fisher VaR + CVaR au lieu de la
+  VaR Gaussienne aveugle aux black swans
+- **R8 — Meta-gate** : un classifier "should we trade now ?" qui
+  élimine l'overtrading dans le bruit (López de Prado, Meta-Labeling)
+- **R10 — Mémoire long-terme** : table `learning_history` qui survit
+  au-delà des positions ouvertes
+- **R11 — Hoeffding bounds** : garantie statistique sur les updates
+
+Chacune est implémentable en **pure Python**, mesurable, et
+auditable. **Aucune fonctionnalité fictive.**
+
+---
+
+*v1.1 — 2026-04-25 — ajout référence doc 10*

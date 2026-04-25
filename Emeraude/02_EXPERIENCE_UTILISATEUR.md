@@ -239,6 +239,355 @@ viable sur cet historique en lisant le rapport.
 
 ---
 
+## Onboarding wizard (premier lancement)
+
+Lors du **tout premier lancement** de l'app (DB vide, aucune config),
+un wizard guidé en **4 étapes** doit s'afficher. **Zéro friction**,
+**zéro savoir technique requis**.
+
+### Étape 1/4 — Bienvenue
+
+**Visuel** : logo Emeraude + texte d'accueil
+
+```
+Bienvenue dans Emeraude.
+
+Emeraude est ton trader crypto autonome. Il analyse le marché 24/7
+et trade pour toi sur ton compte Binance.
+
+Avant de commencer, on a besoin de 3 informations :
+  1. Tes clés API Binance (lecture + trading)
+  2. Le budget que tu lui alloues (en USDT)
+  3. Confirmer le démarrage
+
+Ça prend moins de 5 minutes.
+
+[ Commencer → ]
+```
+
+### Étape 2/4 — Connexion Binance
+
+**Visuel** : 2 champs API + lien d'aide + bouton de test
+
+```
+Connexion à ton compte Binance
+
+1. Connecte-toi sur binance.com
+2. Va dans "API Management"
+3. Crée une nouvelle clé API
+4. ✅ Active "Read" et "Trade"
+5. ❌ NE PAS activer "Withdraw"
+6. Copie-colle ici :
+
+[Champ : Clé API Binance         ]
+[Champ : Secret API (caché)      ]
+
+[Tester la connexion]
+[Aide : comment créer une clé →]
+
+← Retour                  Suivant →
+```
+
+**Logique** :
+- Si test échoue : message d'erreur précis (cf. `_test_binance`
+  diagnostic 2 étapes)
+- Si test OK : afficher solde Binance + bouton "Suivant"
+- Si la clé a "Withdraw" activé : refus + message d'avertissement
+  (cf. doc 09 sécurité)
+
+### Étape 3/4 — Allocation du budget
+
+**Visuel** : un champ + explication des 2 sous-portefeuilles
+
+```
+Combien tu alloues au bot ?
+
+Emeraude va répartir ce capital en 2 sous-portefeuilles automatiquement :
+
+🔵 Actif    : capital de travail (le bot trade avec)
+🟢 Réserve  : sécurisation des gains (USDT, intouché)
+
+Au début, 100 % en Actif. À mesure que le bot gagne, il transfère
+progressivement vers la Réserve pour sécuriser tes bénéfices.
+
+[Champ : Budget en USDT  →  20.00]
+
+Note : le bot peut théoriquement perdre 100 % de ce budget. N'alloue
+       que ce que tu acceptes de perdre.
+
+← Retour                  Suivant →
+```
+
+### Étape 4/4 — Confirmation et démarrage
+
+**Visuel** : récapitulatif + double confirmation argent réel
+
+```
+Récapitulatif avant démarrage
+
+Compte Binance      : Connecté ✅
+Solde sur Binance   : $130.45
+Budget alloué bot   : $20.00
+Mode                : RÉEL (argent vrai)
+
+Le bot va :
+  • Lancer son premier cycle d'analyse dans 60 secondes
+  • Cycle suivant toutes les 60 minutes
+  • Notifications quotidiennes via Telegram (à configurer)
+  • Rapport hebdomadaire avec skim profit
+  • Tu peux l'arrêter à tout moment via le bouton Emergency Stop
+
+[ ⚠ Je comprends et j'active le bot ]
+
+(Ce bouton demande une confirmation par double-tap.)
+
+← Retour
+```
+
+**Après cette étape** : redirection vers le Dashboard, le bot est
+actif.
+
+### Ce que le wizard NE demande JAMAIS
+
+L'utilisateur ne doit **jamais** être confronté à :
+- Choisir une stratégie
+- Régler des paramètres techniques (min_score, R/R, etc.)
+- Activer ou non un filtre
+- Comprendre RSI / MACD / Bollinger
+- Choisir un timeframe
+- Configurer un exchange autre que Binance
+
+**Tous ces choix sont pré-réglés** avec la config champion validée
+(cf. doc 04). L'utilisateur peut les modifier plus tard via Config
+en mode "Avancé" (caché par défaut).
+
+---
+
+## Mode "Explication" (opt-in)
+
+> Pour les utilisateurs curieux qui veulent **comprendre** ce que le
+> bot fait, sans devoir le configurer.
+
+### Principe
+
+Sur chaque écran, un **bouton discret "ℹ Pourquoi ?"** ou
+"Explication" en bas à droite révèle un panneau contextuel.
+
+### Exemples par écran
+
+#### Sur Dashboard, panneau "Pourquoi cette opportunité ?"
+
+```
+🎯 Top opportunité : SOL ACHAT FORT (65%)
+
+Pourquoi le bot recommande SOL ?
+
+  ✓ RSI à 28 → coin survendu, rebond probable
+  ✓ MACD croise au-dessus de la signal line → momentum haussier
+  ✓ Prix au-dessus de l'EMA 50 → tendance long terme positive
+  ✓ Volume +35 % vs moyenne 20j → confirmation
+  ✓ Pas de support cassé récemment
+
+  Score combiné : 65/100
+  R/R proposé : 2.3:1
+  Position recommandée : ~5 USD si tu décides d'acheter
+
+[Comprendre les indicateurs →]
+[Pourquoi je vois ce signal ?]
+```
+
+#### Sur Portfolio, panneau "Pourquoi ce skim ?"
+
+```
+💰 Skim de cette semaine : 0.92 USDT → Réserve
+
+Pourquoi 0.92 USDT (50 %) ?
+
+  Tu es au palier P2 — Croissance.
+  Ton capital total ($24.30) dépasse 1.2× ton capital initial ($24.00).
+  Au palier P2, le bot transfère 50 % des gains hebdomadaires en
+  Réserve pour sécuriser tes bénéfices.
+
+  Gains de la semaine : 1.83 USDT
+  Skim (50 %)         : 0.92 USDT → Réserve
+  Réinvesti (50 %)    : 0.91 USDT (reste dans Actif)
+
+  Prochain palier (P3) : à $40 de capital total.
+```
+
+#### Sur Signaux, panneau "Pourquoi le bot a skipé ETH ?"
+
+```
+ETH skipped — pourquoi ?
+
+  Score : 38 (en dessous du seuil min_score = 45)
+  Raison principale : RSI à 52 (zone neutre, pas de signal fort)
+
+  Le bot ne prend que les signaux suffisamment forts pour avoir une
+  espérance positive après frais (0.3 % par trade).
+```
+
+### Niveau de détail progressif
+
+Le panneau "Explication" a 3 niveaux :
+- **🟢 Simple** (par défaut) : phrases en langage courant
+- **🟡 Détaillé** : avec valeurs des indicateurs
+- **🔴 Technique** : formules, code, audit JSON
+
+L'utilisateur choisit son niveau dans Config → "Niveau de
+verbosité explications".
+
+---
+
+## Notifications proactives (niveau entreprise)
+
+> L'app **prévient** l'utilisateur des événements importants, sans
+> qu'il ait à ouvrir l'app pour vérifier.
+
+### Cycle quotidien (Telegram)
+
+Chaque jour à 22:00 UTC, si Telegram configuré :
+
+```
+📊 Emeraude — Aujourd'hui
+
+🤖 Bot : ACTIF (cycle #1247)
+💰 Capital : $24.30 (+0.42 USDT, +1.8 %)
+📈 Trades : 1 exécuté (BTC, +0.42 USDT)
+📊 Marché : BULL (BTC +3.2 %)
+🟢 Tout va bien
+```
+
+### Alertes ponctuelles
+
+Le bot envoie une notification quand :
+
+- 🟢 **Trade gagnant fermé** (TP atteint) avec P&L
+- 🔴 **Trade perdant fermé** (SL atteint) avec leçon apprise
+- 🚨 **Circuit Breaker activé** (TRIGGERED ou FROZEN)
+- 💰 **Skim hebdomadaire effectué** (récapitulatif)
+- 📈 **Nouveau palier atteint** (P0 → P1, etc.)
+- ⚠️ **Connexion Binance perdue** > 30 min
+- 📅 **Rapport hebdomadaire** dimanche soir
+- 🛡 **Suggestion d'audit** (mensuel : "ça fait 30 jours, vérifie tes
+  permissions Binance")
+
+### Fréquence raisonnable
+
+L'utilisateur ne doit **pas être spammé**. Règles :
+- Maximum 1 notification non-critique / heure
+- Maximum 5 notifications / jour en mode normal
+- Critique (Circuit Breaker, perte connexion) : illimité mais clair
+
+L'utilisateur peut **régler** la verbosité dans Config → "Notifications" :
+- Toutes (recommandé)
+- Seulement critiques
+- Seulement quotidien
+- Aucune (déconseillé)
+
+---
+
+## États visuels de l'app (UX state machine)
+
+L'app a **4 états visuels** distincts, instantanément reconnaissables :
+
+### 🟢 État "Actif"
+- Couleur principale : vert émeraude
+- Header : "🤖 Bot actif — cycle #N"
+- L'utilisateur n'a rien à faire
+
+### 🟡 État "Paramétrage"
+- Couleur principale : orange
+- Header : "Configuration en cours — finalise pour activer le bot"
+- L'utilisateur doit compléter quelque chose
+
+### 🔵 État "Pause"
+- Couleur principale : bleu
+- Header : "Bot en pause — Tape pour activer"
+- L'utilisateur a délibérément arrêté le bot
+
+### 🔴 État "Urgence"
+- Couleur principale : rouge
+- Header : "🚨 Action requise"
+- Quelque chose nécessite l'attention immédiate (Circuit Breaker,
+  réseau perdu > 1h, etc.)
+
+L'icône de l'app sur Android peut **également refléter l'état** via
+un badge de notification (🟢 / 🟡 / 🔴).
+
+---
+
+## Human override : interventions manuelles sans casser le bot
+
+Emeraude est autonome, mais l'utilisateur reste **propriétaire ultime
+de son capital**. Il doit pouvoir intervenir manuellement sans que le
+bot entre en conflit avec la state machine.
+
+### 4 cas d'override prévus
+
+| # | Cas | Action utilisateur | Réaction Emeraude |
+|:-:|---|---|---|
+| H1 | **Fermeture manuelle d'une position** | Tap "Fermer maintenant" sur une carte position | Annule SL/TP serveur, place market sell, marque la position `closed_manually` dans DB, log audit `manual_exit` |
+| H2 | **Pause totale du bot** | Toggle "Mettre en pause" | Aucun nouveau cycle d'entrée, gestion exits **conservée** (SL/TP serveur tournent toujours), bandeau jaune "EN PAUSE" |
+| H3 | **Stop d'urgence (kill switch)** | Bouton rouge "STOP TOUT" + double-confirmation biométrique | Annulation de tous les SL/TP pendants, fermeture market de toutes positions, bot freeze total, état "STOP UTILISATEUR" persisté |
+| H4 | **Modification d'un SL en cours** | Slider dans la carte position | Re-place le SL serveur côté Binance avec le nouveau prix, log audit `manual_sl_change` |
+
+### Règle absolue : pas de conflit silencieux
+
+Toute action manuelle qui modifie l'état d'une position doit :
+
+1. **Apparaître dans `audit_log`** avec type `manual_*`
+2. **Être visible immédiatement** dans le journal des trades (badge "M" pour manuel)
+3. **Bloquer pendant 30 s** toute action automatique sur la même
+   position (anti-race condition)
+4. **Synchroniser l'état** : après l'action, refetch positions Binance
+   pour confirmer
+
+### Anti-pattern à éviter
+
+L'erreur classique : l'utilisateur ferme manuellement BTC sur l'app
+Binance officielle, mais Emeraude ignore et garde la position dans sa
+DB → SL fantôme, double-comptage.
+
+**Garde-fou** : à chaque cycle, **réconciliation** des positions DB vs
+Binance API. Toute divergence détectée :
+- Position en DB absente de Binance → marquée `closed_externally` avec PnL reconstitué via trades history
+- Position dans Binance absente de DB → ingérée comme position
+  manuelle avec tag `imported_external`
+- Notification utilisateur si > 1 divergence par jour (suspicion bug)
+
+### UX du STOP d'urgence
+
+Le bouton rouge n'est **jamais en première ligne** (risque de tap
+accidentel). Workflow :
+
+```
+Settings → "Avancé" → "Arrêt d'urgence"
+    ↓
+"Cette action va fermer toutes les positions au prix marché.
+ Pertes potentielles si gap. Continuer ?"
+    ↓
+[Annuler]  [Confirmer (biométrique)]
+    ↓ (si confirmé)
+Animation rouge 3 s : "Fermeture en cours..."
+    ↓
+Écran final : nombre de positions fermées, PnL réalisé total
+```
+
+→ Réversibilité : l'utilisateur peut redémarrer le bot après, mais le
+capital est figé tant qu'il ne réautorise pas explicitement.
+
+### Critères mesurables (H1-H4)
+
+| # | Critère | Validation |
+|:-:|---|---|
+| H1 | Tous les overrides loggés en `audit_log` type `manual_*` | audit query |
+| H2 | Réconciliation DB ↔ Binance à chaque cycle | audit log + test |
+| H3 | 0 conflit auto/manuel non détecté en 30 jours | audit query |
+| H4 | Stop d'urgence ferme 100 % positions ≤ 30 s | test E2E |
+
+---
+
 ## Anti-patterns UX interdits
 
 | ❌ Anti-pattern | Pourquoi c'est mauvais |
