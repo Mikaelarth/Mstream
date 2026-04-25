@@ -1,21 +1,28 @@
 # État Réel du Projet — Code vs Documentation
 
 > Document de vérité croisant chaque fonctionnalité avec son statut réel dans le code source.
-> Mis à jour : 2026-04-24 (révisions post-audit continu).
+> Mis à jour : 2026-04-25 (post-itération mission).
 >
-> **Stats du projet** : ~8 914 lignes Python · 20 modules `core/` · 4 écrans Kivy · 26 fichiers au total.
+> **Stats du projet** : ~12 550 lignes Python (incluant tests) · 28 modules `core/` · 5 écrans Kivy · 311 tests pytest.
 >
 > Historique récent des audits :
-> - Itération #5 : −39 lignes (code mort retiré) + 9 lignes (thread-safety CB)
-> - Itération #6 : +44 lignes (cache OHLCV per-cycle, −28 % HTTP calls par cycle)
-> - Itération #10 : V14 polish — `except Exception` remplacé par exceptions ciblées (sqlite3.Error, ValueError, TypeError) dans `equity_history.py` (record_snapshot, get_history) et `export.py` (query trades). Les `except Exception` restants (audit worker loop, _do_log_event_sync) sont volontaires — l'audit ne doit jamais bloquer le bot. Tests : 57/57 ✓.
-> - Itération #11 : couverture tests V14 — +36 tests (`test_retry.py`, `test_backup.py`, `test_notifications.py`). **Bug attrapé par les tests** : dans `retry.py`, `HTTPError` (sous-classe de `URLError`) était capturé par la mauvaise branche → tous les codes HTTP étaient retriés y compris 400/401. Ordre des `isinstance` corrigé. Tests : 93/93 ✓.
-> - Itération #12 : couverture audit — +14 tests (`test_audit.py`). Mode sync, mode async (drain queue, idempotence enable/disable, fallback sync sur queue saturée), helpers (signal/entry/exit/regime), cycle_id grouping, query_events filtres, purge_old_events. Tests : 107/107 ✓.
-> - Itération #13 : couverture modules math fondationnels — +61 tests (`test_indicators.py` 26, `test_metrics.py` 35). Indicateurs (RSI/MACD/BB/ATR/Stoch/SR) testés sur cas connus (constants, monotones, oscillations) et bornes (RSI∈[0,100]). Métriques (Sharpe/Sortino/Calmar/PF/expectancy/R-stats) testées sur valeurs prédictibles. Documenté la convention peak-to-trough de `drawdown_duration_candles`. Tests : 168/168 ✓.
-> - Itération #14 : couverture modules pipeline d'entrée — +58 tests (`test_regime.py` 18, `test_ensemble.py` 22, `test_mtf.py` 18). Régime testé sur trends synthétiques (uptrend→BULL, downtrend→BEAR, plat→NEUTRAL), profils cohérents (BULL > NEUTRAL > BEAR sur permissivité), transitions golden/death cross. Ensemble : 3 stratégies × votes cohérents (oversold→buy, overbought→sell), agrégation pondérée par régime, `is_ensemble_qualified` rejette correctement aux 4 seuils. MTF : confluence 3/3 alignée, refus si TF long-terme bearish strong. Documenté l'artéfact MACD≈signal sur trend linéaire pur. Tests : 226/226 ✓.
-> - Itération #15 : intégration AutoTrader (Bot Maître) — +19 tests (`test_auto_trader.py`). Cycle de vie (init, singleton, status), thread-safety de update_market_data (5 threads × 100 updates), résolution paper_mode des clés DB (convention suffixe `_paper` appliquée à la clé originale), comportement `_cycle()` (no data → return early, master inactif → skip, budget=0 → warning, master+budget+drawdown OK → call master_cycle, OHLCV cache reset chaque cycle), drawdown threshold (under/over/no-initial), ROI (zero/positive/loss). Tests : 245/245 ✓.
-> - Itération #16 : couverture checkpoint + walk-forward — +16 tests. Checkpoint : save→load roundtrip, purge keep_last_n, JSON corrompu→None, capture/restore CB state. Walk-forward : edge cases + 1 smoke test consolidé. Tests : 261/261 ✓.
-> - Itération #17 (vraiment finale) : couverture signals + crypto — +45 tests (`test_signals.py` 30, `test_crypto.py` 15). Crypto (sécurité-critique) : roundtrip ASCII/UTF-8/long strings, préfixe `enc:`, compat ascendante (legacy plain), corruption→"", déterminisme pour même salt, ciphertext≠clair. Signals (cœur des décisions) : 5 sub-scorers (RSI/MACD/BB/Stoch/EMA) sur valeurs connues, `analyze()` full bullish/bearish/neutral, score clampé [-100,100], SL/TP positions cohérentes (BUY: SL<price<TP), `rank_opportunities` priorise BUY > SELL et bonus R/R≥2. Tests : **306/306 ✓** en 22s.
+> - Itérations #5-#17 : durcissement tests, code mort retiré, exceptions ciblées, agent adaptatif Thompson, cache OHLCV. Tests passés de 57 à 306.
+> - **V14 (avril 2026)** : intégration features production — Paper mode, Telegram, Backup DB, Retry exponentiel, Validation settings, Logs rotatifs, Partial exits, Equity history, Export CSV, Audit async.
+> - **Sprint Android (avril 2026)** : déploiement APK via GitHub Actions.
+>   - Récursion infinie logging (Kivy capture stderr) → console=False
+>   - Emojis non rendus sur Roboto Android → font registration limitée à Windows
+>   - Persistance DB perdue entre sessions → nouveau module `core/paths.py` qui détecte Android et utilise `app_storage_path()`
+>   - SSL HTTPS échouait silencieusement → `core/net.py` centralise SSL_CTX (certifi + system CAs + fallback)
+>   - 31 emojis bouton/labels remplacés par texte universel
+>   - Notifications fixes en bas → toast central auto-dismiss (`screens/toast.py`)
+>   - R/R 0.5x sur "ACHAT FORT" → garantie min_rr=2.0 dans `_compute_stop_take`, downgrade si <1.5
+>   - `_qualifies` exigeait STRONG_BUY only → accepte BUY+STRONG_BUY (score discrimine)
+>   - Backtest 0 trade → filtres avancés OFF en mode démo
+> - **Itération mission (2026-04-25)** : audit 20 dimensions, 311/311 tests.
+>   - 🔴 P0 : `notifications.py` urlopen sans SSL_CTX → Telegram cassé sur Android. Fix appliqué.
+>   - 🟠 P1 : `backup.py` n'avait pas de `restore_from_backup()` (critère terminaison #17 invalidé). Fonction ajoutée avec rollback atomique + 5 tests.
+>   - 🟠 P1 : doc périmée (s'arrêtait à #17). Mise à jour.
+>   - 🟡 P2 reportés : Sharpe/PF stratégie sur 365j (calibration), KeyStore Android, paper mode 30j, APK 24h continu.
 
 ---
 

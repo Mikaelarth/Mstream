@@ -98,6 +98,95 @@ def test_list_backups_empty_dir(tmp_path):
     assert backup_mod.list_backups(inexistant) == []
 
 
+def test_restore_refuses_inexistant_backup(tmp_path):
+    """Restore refuse si le backup n'existe pas."""
+    fake = tmp_path / "no.db"
+    assert backup_mod.restore_from_backup(fake) is False
+
+
+def test_restore_refuses_corrupt_backup(tmp_path, monkeypatch):
+    """Backup non-SQLite valide → refus, DB cible non touchée."""
+    bad = tmp_path / "fake.db"
+    bad.write_bytes(b"not a real sqlite database content")
+    target = tmp_path / "target.db"
+    target.write_bytes(b"original")
+    monkeypatch.setattr(backup_mod, "_get_source_db_path", lambda: target)
+    ok = backup_mod.restore_from_backup(bad, confirm_overwrite=True)
+    assert ok is False
+    # La cible originale n'a PAS été touchée (sécurité avant écrasement)
+    assert target.read_bytes() == b"original"
+
+
+def test_restore_refuses_overwrite_without_confirm(tmp_path, monkeypatch):
+    """Sans confirm_overwrite=True, refus si DB cible existe."""
+    backup = tmp_path / "valid_backup.db"
+    src = sqlite3.connect(str(backup))
+    src.execute("CREATE TABLE marker (id INTEGER)")
+    src.execute("INSERT INTO marker VALUES (42)")
+    src.commit()
+    src.close()
+    target = tmp_path / "target.db"
+    target.write_bytes(b"existing target db")
+    monkeypatch.setattr(backup_mod, "_get_source_db_path", lambda: target)
+    ok = backup_mod.restore_from_backup(backup)   # confirm_overwrite=False par défaut
+    assert ok is False
+    assert target.read_bytes() == b"existing target db"
+
+
+def test_restore_roundtrip_atomic(tmp_path, monkeypatch):
+    """Crée un backup, modifie la DB, restaure depuis le backup → marker retrouvé."""
+    target = tmp_path / "target.db"
+    monkeypatch.setattr(backup_mod, "_get_source_db_path", lambda: target)
+
+    # 1. Créer DB initiale avec un marker
+    conn = sqlite3.connect(str(target))
+    conn.execute("CREATE TABLE marker (val TEXT)")
+    conn.execute("INSERT INTO marker VALUES ('original')")
+    conn.commit()
+    conn.close()
+
+    # 2. Backup
+    backup_dir = tmp_path / "backups"
+    backup_dir.mkdir()
+    backup_path = backup_mod.create_backup(backup_dir=backup_dir)
+    assert backup_path is not None and backup_path.exists()
+
+    # 3. Modifier la DB (simule corruption / mauvaise écriture)
+    conn = sqlite3.connect(str(target))
+    conn.execute("UPDATE marker SET val = 'corrupted'")
+    conn.commit()
+    conn.close()
+
+    # 4. Restore depuis backup
+    ok = backup_mod.restore_from_backup(backup_path, confirm_overwrite=True)
+    assert ok is True
+
+    # 5. Vérifier que la valeur 'original' est revenue
+    conn = sqlite3.connect(str(target))
+    val = conn.execute("SELECT val FROM marker").fetchone()[0]
+    conn.close()
+    assert val == "original"
+
+
+def test_restore_keeps_safety_copy_for_rollback(tmp_path, monkeypatch):
+    """Après une restauration réussie, une safety copy doit exister pour rollback."""
+    target = tmp_path / "target.db"
+    monkeypatch.setattr(backup_mod, "_get_source_db_path", lambda: target)
+
+    conn = sqlite3.connect(str(target))
+    conn.execute("CREATE TABLE m (v TEXT)")
+    conn.commit()
+    conn.close()
+
+    backup_dir = tmp_path / "backups"
+    backup_dir.mkdir()
+    backup_path = backup_mod.create_backup(backup_dir=backup_dir)
+
+    backup_mod.restore_from_backup(backup_path, confirm_overwrite=True)
+    safety_copies = list(target.parent.glob(f"{target.name}.before_restore_*"))
+    assert len(safety_copies) >= 1
+
+
 def test_create_backup_and_purge_combo(tmp_backup_dir):
     """Le helper combiné crée + purge en un appel."""
     # Pré-remplir avec un backup expiré

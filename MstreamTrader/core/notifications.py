@@ -33,6 +33,8 @@ import urllib.error
 from datetime import datetime
 from typing import Optional
 
+from core.net import SSL_CTX, explain_url_error
+
 
 logger = logging.getLogger("notifications")
 
@@ -108,14 +110,16 @@ def _send_telegram_sync(text: str, silent: bool = False) -> bool:
 
     try:
         req = urllib.request.Request(url, data=data)
-        with urllib.request.urlopen(req, timeout=_REQUEST_TIMEOUT) as resp:
+        # context=SSL_CTX critique sur Android — sinon HTTPS Telegram échoue
+        with urllib.request.urlopen(req, timeout=_REQUEST_TIMEOUT,
+                                     context=SSL_CTX) as resp:
             body = json.loads(resp.read().decode("utf-8"))
             return bool(body.get("ok"))
     except (urllib.error.URLError, urllib.error.HTTPError, OSError) as exc:
-        logger.debug(f"[Telegram] Send failed (network) : {exc}")
+        logger.warning(f"[Telegram] Send failed (network) : {explain_url_error(exc)}")
         return False
     except (ValueError, KeyError) as exc:
-        logger.debug(f"[Telegram] Send failed (parse) : {exc}")
+        logger.warning(f"[Telegram] Send failed (parse) : {exc}")
         return False
 
 

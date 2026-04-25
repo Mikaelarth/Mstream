@@ -73,7 +73,7 @@ def test_send_sync_calls_urllib_when_configured(monkeypatch):
         def __exit__(self, *a): pass
         def read(self): return b'{"ok": true}'
 
-    def fake_urlopen(req, timeout=None):
+    def fake_urlopen(req, timeout=None, context=None):
         captured["url"] = req.full_url
         captured["data"] = req.data
         return FakeResponse()

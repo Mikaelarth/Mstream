@@ -113,3 +113,80 @@ def create_backup_and_purge(backup_dir: Path = None,
     result = create_backup(backup_dir)
     purge_old_backups(backup_dir, retention_days)
     return result
+
+
+def restore_from_backup(backup_path: Path,
+                         confirm_overwrite: bool = False) -> bool:
+    """
+    Restaure la DB principale depuis un backup atomiquement.
+
+    Args:
+        backup_path       : chemin vers le fichier .db de backup à restaurer.
+        confirm_overwrite : True pour confirmer écrasement de la DB en cours.
+                            Sécurité : sans ça, refus si DB cible existe.
+
+    Stratégie atomique en 3 étapes :
+      1. Renommer DB actuelle en `<db>.before_restore_<TS>` (rollback possible)
+      2. Utiliser sqlite3.Connection.backup() depuis le backup vers la DB
+      3. Si OK : la sauvegarde de sécurité reste pour rollback manuel
+         Si KO : on remet la sauvegarde en place
+
+    Retourne True si la restauration a réussi, False sinon.
+    """
+    if not backup_path.exists():
+        logger.error(f"Backup introuvable : {backup_path}")
+        return False
+    if not backup_path.is_file():
+        logger.error(f"Backup n'est pas un fichier : {backup_path}")
+        return False
+
+    target = _get_source_db_path()
+    safety_copy: Path | None = None
+
+    try:
+        # Vérifier que le backup est une DB SQLite valide AVANT toucher à la cible
+        try:
+            test_conn = sqlite3.connect(str(backup_path))
+            test_conn.execute("SELECT name FROM sqlite_master LIMIT 1").fetchone()
+            test_conn.close()
+        except sqlite3.Error as exc:
+            logger.error(f"Backup corrompu, refus de restaurer : {exc}")
+            return False
+
+        if target.exists() and not confirm_overwrite:
+            logger.error(
+                "DB cible existe et confirm_overwrite=False — refus."
+            )
+            return False
+
+        # Étape 1 : safety copy de la DB actuelle (rollback possible)
+        if target.exists():
+            ts = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+            safety_copy = target.parent / f"{target.name}.before_restore_{ts}"
+            target.rename(safety_copy)
+            logger.info(f"DB actuelle sauvegardee : {safety_copy.name}")
+
+        # Étape 2 : copie atomique via API SQLite (pas un simple file copy)
+        src = sqlite3.connect(str(backup_path))
+        dst = sqlite3.connect(str(target))
+        try:
+            src.backup(dst)
+        finally:
+            src.close()
+            dst.close()
+
+        logger.info(f"DB restauree depuis : {backup_path.name}")
+        return True
+
+    except (sqlite3.Error, OSError) as exc:
+        logger.error(f"Echec restauration : {exc}")
+        # Rollback : remettre la safety copy en place si elle existe
+        if safety_copy is not None and safety_copy.exists():
+            try:
+                if target.exists():
+                    target.unlink()
+                safety_copy.rename(target)
+                logger.info("Rollback effectue : DB precedente restauree")
+            except OSError as rollback_exc:
+                logger.error(f"Rollback impossible : {rollback_exc}")
+        return False
