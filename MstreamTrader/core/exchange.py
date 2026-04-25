@@ -16,6 +16,8 @@ import urllib.parse
 import urllib.error
 from datetime import datetime
 
+from core.net import SSL_CTX, explain_url_error
+
 
 BINANCE_BASE = "https://api.binance.com"
 
@@ -84,7 +86,9 @@ class BinanceClient:
             req.add_header("X-MBX-APIKEY", self.api_key)
 
             try:
-                with urllib.request.urlopen(req, timeout=10) as resp:
+                # context=SSL_CTX critique sur Android — sinon HTTPS échoue
+                # silencieusement (pas de chaîne de CAs valide).
+                with urllib.request.urlopen(req, timeout=10, context=SSL_CTX) as resp:
                     body = resp.read().decode("utf-8")
                     return json.loads(body)
             except urllib.error.HTTPError as e:
@@ -95,7 +99,7 @@ class BinanceClient:
                 except json.JSONDecodeError:
                     raise BinanceError(f"Binance HTTP {e.code}: {body}")
             except urllib.error.URLError as e:
-                raise BinanceError(f"Connexion impossible: {e.reason}")
+                raise BinanceError(f"Connexion impossible : {explain_url_error(e)}")
 
         return _do_request()
 

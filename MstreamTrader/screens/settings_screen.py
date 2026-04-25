@@ -310,20 +310,51 @@ class SettingsScreen(Screen):
         Thread(target=self._test_binance, daemon=True).start()
 
     def _test_binance(self):
+        """
+        Test de connexion en 2 étapes pour diagnostiquer précisément :
+          1. /ping : test réseau pur (DNS, SSL, accès api.binance.com)
+          2. /account : test signature + clés API valides
+        Distingue ainsi un problème réseau d'un problème de clés.
+        """
         client = exchange.get_client()
-        if client and client.test_connection():
-            try:
-                balance = client.get_usdt_balance()
-                database.set_setting("usdt_balance", str(balance))
-                Clock.schedule_once(lambda dt: self._show_status(
-                    f"Connexion Binance réussie! Solde USDT: ${balance:,.2f}", error=False
-                ), 0)
-            except exchange.BinanceError as e:
-                Clock.schedule_once(lambda dt: self._show_status(str(e), error=True), 0)
-        else:
+        if not client:
             Clock.schedule_once(lambda dt: self._show_status(
-                "Connexion échouée — Vérifiez vos clés API", error=True
+                "Clés API non configurées en DB — réessayez", error=True
             ), 0)
+            return
+
+        # Étape 1 : test réseau pur (sans signature)
+        try:
+            client._request("GET", "/api/v3/ping")
+        except exchange.BinanceError as e:
+            # Souvent SSL/réseau, pas les clés
+            Clock.schedule_once(lambda dt: self._show_status(
+                f"Réseau impossible vers Binance : {e}", error=True
+            ), 0)
+            return
+        except Exception as e:
+            Clock.schedule_once(lambda dt: self._show_status(
+                f"Erreur inattendue ping : {e}", error=True
+            ), 0)
+            return
+
+        # Étape 2 : test clés API (signature + permissions)
+        try:
+            balance = client.get_usdt_balance()
+            database.set_setting("usdt_balance", str(balance))
+            Clock.schedule_once(lambda dt: self._show_status(
+                f"Connexion Binance reussie. Solde USDT : ${balance:,.2f}", error=False
+            ), 0)
+        except exchange.BinanceError as e:
+            # Erreurs typiques : -2014/-2015 (clés invalides), -1022 (signature)
+            msg = str(e)
+            if "-2014" in msg or "-2015" in msg or "API-key" in msg.lower():
+                msg = f"Clés API rejetées par Binance : {e}"
+            elif "-1022" in msg:
+                msg = f"Signature invalide (clé secrète mauvaise) : {e}"
+            elif "-1021" in msg:
+                msg = f"Horloge décalée : verifiez date/heure téléphone"
+            Clock.schedule_once(lambda dt: self._show_status(msg, error=True), 0)
 
     def save_risk_settings(self):
         if hasattr(self.ids, "risk_input"):
