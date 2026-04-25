@@ -348,6 +348,14 @@ def main():
         candle_duration_sec = secs_per_candle,
         cooldown_candles    = max(1, 21600 // secs_per_candle),
         use_regime_filter   = args.regime,
+        # Filtres avancés OFF par défaut en grid search :
+        # ils rejettent quasi tout sur des historiques courts/calmes (constaté
+        # empiriquement : 0 trades sur 240 configs avec ensemble + mtf
+        # + correlation activés). Le grid search valide la stratégie de BASE.
+        # Le bot LIVE garde ces filtres ON pour la rigueur en production.
+        use_ensemble        = False,
+        use_mtf_confluence  = False,
+        use_correlation_block = False,
     )
 
     # 3. Fetch BTC daily si régime activé (pour le filtre bull/bear)

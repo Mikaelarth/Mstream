@@ -256,8 +256,13 @@ def _compute_stop_take(
                          if s < price and (price - s) >= 0.5 * atr_val]
             if valid_sup:
                 nearest_support = max(valid_sup)
-                # Le SL doit ÊTRE PLUS BAS que le support (sécurité)
-                stop_loss = max(stop_loss, nearest_support * 0.995)
+                # Le SL doit être PLUS BAS QUE OU À ÉGALITÉ AVEC support * 0.995
+                # (= invalidation thèse haussière). On prend le PLUS PROFOND
+                # entre ATR et "juste sous support" pour donner du space au
+                # trade et éviter les stops sur bruit.
+                # BUG FIX : auparavant `max(...)` resserrait le SL au lieu
+                # de l'élargir, causant ~100 % de SL hits en backtest.
+                stop_loss = min(stop_loss, nearest_support * 0.995)
 
         # TP ATR par défaut (3× ATR = R/R 2:1 garanti)
         tp_atr = price + (3 * atr_val)

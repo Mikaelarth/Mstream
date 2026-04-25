@@ -230,7 +230,10 @@ class AutoTrader:
             try:
                 self._cycle()
             except Exception as exc:
-                logger.error(f"[BotMaitre] Erreur cycle: {exc}")
+                # Le thread daemon ne doit JAMAIS mourir — on catch
+                # tout, MAIS on log le traceback complet pour debug
+                # post-mortem (ne pas masquer les bugs).
+                logger.exception(f"[BotMaitre] Erreur cycle : {exc}")
                 self._status = f"Erreur: {exc}"
             self._stop_event.wait(CYCLE_INTERVAL)
 
