@@ -20,11 +20,13 @@ import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from core import paths
+
 
 logger = logging.getLogger("backup")
 
-# Emplacement par défaut (configurable via init_backup)
-_DEFAULT_BACKUP_DIR = Path(__file__).resolve().parent.parent.parent / "backups"
+# Emplacement par défaut (configurable via init_backup) — storage Android-safe
+_DEFAULT_BACKUP_DIR = paths.BACKUPS_DIR
 
 
 def _get_source_db_path() -> Path:

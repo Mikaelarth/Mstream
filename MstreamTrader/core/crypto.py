@@ -25,9 +25,12 @@ import base64
 import hashlib
 from pathlib import Path
 
+from core import paths
+
 
 # Fichier salt stocké à côté de la DB (mais séparé du fichier SQLite)
-_SALT_FILE = Path(__file__).resolve().parent.parent.parent / ".mstream_salt"
+# Sur Android, dans le storage privé de l'app — survit aux redémarrages
+_SALT_FILE = paths.SALT_FILE
 
 # Constante liée au binaire de l'app
 _APP_SECRET = b"MstreamTrader_v1_local_at_rest_obfuscation_layer"

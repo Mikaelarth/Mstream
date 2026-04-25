@@ -24,9 +24,11 @@ import os
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
+from core import paths
 
-# Répertoire des logs (à côté de la DB)
-_LOGS_DIR = Path(__file__).resolve().parent.parent.parent / "logs"
+
+# Répertoire des logs (à côté de la DB) — storage Android-safe
+_LOGS_DIR = paths.LOGS_DIR
 
 # Format standard du projet
 _LOG_FORMAT = "%(asctime)s.%(msecs)03d [%(levelname)-7s] [%(name)s] %(message)s"

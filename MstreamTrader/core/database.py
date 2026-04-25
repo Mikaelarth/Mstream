@@ -9,8 +9,13 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+from core import paths
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "mstream_trader.db")
+
+# Path centralisé : storage privé Android sur mobile, racine projet sur desktop.
+# Le parent dir est créé si absent (cas premier lancement Android).
+paths.STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = str(paths.DB_FILE)
 
 
 def get_connection() -> sqlite3.Connection:

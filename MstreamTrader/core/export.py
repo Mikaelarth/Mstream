@@ -19,10 +19,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from core import paths
+
 
 logger = logging.getLogger("export")
 
-_EXPORT_DIR = Path(__file__).resolve().parent.parent.parent / "exports"
+_EXPORT_DIR = paths.EXPORTS_DIR
 
 
 def export_trades_to_csv(start_date: Optional[str] = None,
