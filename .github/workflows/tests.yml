@@ -31,9 +31,21 @@ jobs:
           pip install pytest
 
       - name: Run pytest
+        id: pytest
         working-directory: MstreamTrader
         run: |
-          python -m pytest tests/ -v --tb=short
+          set +e
+          python -m pytest tests/ -v --tb=long 2>&1 | tee pytest-output.txt
+          echo "exitcode=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          exit ${PIPESTATUS[0]}
+
+      - name: Upload pytest output (always, for debug)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-output-${{ matrix.python-version }}
+          path: MstreamTrader/pytest-output.txt
+          retention-days: 30
 
       - name: Compile check
         working-directory: MstreamTrader
