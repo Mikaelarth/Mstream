@@ -1,0 +1,229 @@
+#:kivy 2.0
+#:import dp kivy.metrics.dp
+#:import Signal core.signals.Signal
+
+<DashboardScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: 0.07, 0.07, 0.10, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        # ── Header ──────────────────────────────────────────────────────────
+        BoxLayout:
+            size_hint_y: None
+            height: dp(56)
+            padding: [dp(16), dp(8)]
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.15, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+            BoxLayout:
+                orientation: "vertical"
+                size_hint_x: 0.65
+                Label:
+                    text: "[b]M[color=00d966]stream[/color] Trader[/b]"
+                    markup: True
+                    font_size: dp(20)
+                    halign: "left"
+                    color: 1, 1, 1, 1
+                Label:
+                    text: root.api_configured
+                    font_size: dp(11)
+                    halign: "left"
+                    color: root.api_status_color
+
+            BoxLayout:
+                orientation: "vertical"
+                size_hint_x: 0.35
+                Label:
+                    text: root.last_update
+                    font_size: dp(11)
+                    halign: "right"
+                    color: 0.5, 0.5, 0.5, 1
+                Label:
+                    text: root.prices_source
+                    font_size: dp(10)
+                    halign: "right"
+                    color: 0.35, 0.35, 0.35, 1
+
+        # ── Solde & Portfolio ────────────────────────────────────────────────
+        GridLayout:
+            cols: 2
+            size_hint_y: None
+            height: dp(90)
+            padding: [dp(10), dp(8)]
+            spacing: dp(8)
+
+            # Carte Solde USDT
+            BoxLayout:
+                orientation: "vertical"
+                padding: [dp(12), dp(6)]
+                canvas.before:
+                    Color:
+                        rgba: 0.12, 0.12, 0.18, 1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [dp(8)]
+                Label:
+                    text: "Solde USDT"
+                    font_size: dp(11)
+                    color: 0.5, 0.5, 0.5, 1
+                Label:
+                    text: root.usdt_balance
+                    font_size: dp(18)
+                    bold: True
+                    color: 0.0, 0.85, 0.4, 1
+
+            # Carte Portefeuille
+            BoxLayout:
+                orientation: "vertical"
+                padding: [dp(12), dp(6)]
+                canvas.before:
+                    Color:
+                        rgba: 0.12, 0.12, 0.18, 1
+                    RoundedRectangle:
+                        pos: self.pos
+                        size: self.size
+                        radius: [dp(8)]
+                Label:
+                    text: "Positions manuelles"
+                    font_size: dp(11)
+                    color: 0.5, 0.5, 0.5, 1
+                Label:
+                    text: root.portfolio_value
+                    font_size: dp(18)
+                    bold: True
+                    color: 0.7, 0.85, 1, 1
+
+        # ── PnL & Stats ──────────────────────────────────────────────────────
+        BoxLayout:
+            size_hint_y: None
+            height: dp(46)
+            padding: [dp(16), dp(4)]
+            spacing: dp(16)
+
+            Label:
+                text: root.total_pnl_text
+                font_size: dp(14)
+                color: root.pnl_color
+                halign: "left"
+                size_hint_x: 0.55
+
+            Label:
+                text: f"Win rate: {root.win_rate_text}"
+                font_size: dp(13)
+                color: 0.7, 0.7, 0.7, 1
+                halign: "right"
+                size_hint_x: 0.45
+
+        # ── Top Signal ───────────────────────────────────────────────────────
+        BoxLayout:
+            size_hint_y: None
+            height: dp(42)
+            padding: [dp(16), dp(4)]
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.15, 0.12, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Label:
+                text: "[b]Meilleure opportunité:[/b]"
+                markup: True
+                font_size: dp(12)
+                color: 0.6, 0.6, 0.6, 1
+                size_hint_x: 0.45
+            Label:
+                text: root.top_signal_text
+                font_size: dp(13)
+                bold: True
+                color: root.top_signal_color
+                size_hint_x: 0.55
+
+        # ── Liste des Cryptos ────────────────────────────────────────────────
+        Label:
+            text: "MARCHÉS EN DIRECT"
+            font_size: dp(11)
+            color: 0.4, 0.4, 0.4, 1
+            size_hint_y: None
+            height: dp(24)
+            padding: [dp(16), 0]
+
+        ScrollView:
+            size_hint_y: 1
+            CoinListWidget:
+                id: coin_list
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: dp(4)
+                padding: [dp(8), dp(4)]
+
+        # ── Status Bar ───────────────────────────────────────────────────────
+        BoxLayout:
+            size_hint_y: None
+            height: dp(32)
+            padding: [dp(16), dp(4)]
+            canvas.before:
+                Color:
+                    rgba: 0.08, 0.08, 0.10, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Label:
+                text: root.status_text
+                font_size: dp(10)
+                color: 0.45, 0.45, 0.45, 1
+                halign: "left"
+            Button:
+                text: "↺"
+                size_hint_x: None
+                width: dp(36)
+                font_size: dp(16)
+                background_color: 0, 0, 0, 0
+                color: 0.4, 0.7, 1, 1
+                on_press: root.force_refresh()
+
+        # ── Navigation ───────────────────────────────────────────────────────
+        BoxLayout:
+            size_hint_y: None
+            height: dp(52)
+            spacing: 0
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.15, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+
+            Button:
+                text: "[b]◉ Dashboard[/b]"
+                markup: True
+                background_color: 0.0, 0.50, 0.25, 1
+                font_size: dp(12)
+                on_press: app.root.current = "dashboard"
+
+            Button:
+                text: "⚡ Signaux"
+                background_color: 0.12, 0.12, 0.18, 0
+                font_size: dp(12)
+                on_press: app.root.current = "signals"
+
+            Button:
+                text: "💼 Portfolio"
+                background_color: 0.12, 0.12, 0.18, 0
+                font_size: dp(12)
+                on_press: app.root.current = "portfolio"
+
+            Button:
+                text: "⚙ Config"
+                background_color: 0.12, 0.12, 0.18, 0
+                font_size: dp(12)
+                on_press: app.root.current = "settings"

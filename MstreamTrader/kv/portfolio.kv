@@ -1,0 +1,470 @@
+#:kivy 2.0
+#:import dp kivy.metrics.dp
+
+<PortfolioScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: 0.07, 0.07, 0.10, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        # Header (toujours visible)
+        BoxLayout:
+            size_hint_y: None
+            height: dp(52)
+            padding: [dp(16), dp(8)]
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.15, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Label:
+                text: "[b]💼 Portefeuille[/b]"
+                markup: True
+                font_size: dp(20)
+                color: 1, 1, 1, 1
+                halign: "left"
+
+        # ─── Contenu scrollable ────────────────────────────────────────
+        ScrollView:
+            do_scroll_x: False
+            BoxLayout:
+                orientation: "vertical"
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: dp(4)
+
+                # Résumé financier
+                GridLayout:
+                    cols: 2
+                    size_hint_y: None
+                    height: dp(100)
+                    padding: [dp(10), dp(8)]
+                    spacing: dp(8)
+
+                    BoxLayout:
+                        orientation: "vertical"
+                        padding: [dp(12), dp(6)]
+                        canvas.before:
+                            Color:
+                                rgba: 0.12, 0.12, 0.18, 1
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [dp(8)]
+                        Label:
+                            text: "Valeur totale"
+                            font_size: dp(11)
+                            color: 0.5, 0.5, 0.5, 1
+                        Label:
+                            text: root.total_value_text
+                            font_size: dp(18)
+                            bold: True
+                            color: 0.7, 0.85, 1, 1
+
+                    BoxLayout:
+                        orientation: "vertical"
+                        padding: [dp(12), dp(6)]
+                        canvas.before:
+                            Color:
+                                rgba: 0.12, 0.12, 0.18, 1
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [dp(8)]
+                        Label:
+                            text: "Solde USDT libre"
+                            font_size: dp(11)
+                            color: 0.5, 0.5, 0.5, 1
+                        Label:
+                            text: root.usdt_balance
+                            font_size: dp(18)
+                            bold: True
+                            color: 0.0, 0.85, 0.4, 1
+
+                # PnL Global
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(36)
+                    padding: [dp(16), dp(4)]
+                    Label:
+                        text: root.total_pnl_text
+                        font_size: dp(14)
+                        bold: True
+                        color: root.pnl_color
+
+                # Stats trades
+                GridLayout:
+                    cols: 3
+                    size_hint_y: None
+                    height: dp(56)
+                    padding: [dp(10), dp(4)]
+                    spacing: dp(8)
+
+                    BoxLayout:
+                        orientation: "vertical"
+                        canvas.before:
+                            Color:
+                                rgba: 0.12, 0.12, 0.18, 1
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [dp(6)]
+                        Label:
+                            text: "Trades"
+                            font_size: dp(10)
+                            color: 0.5, 0.5, 0.5, 1
+                        Label:
+                            text: root.total_trades_text
+                            font_size: dp(15)
+                            bold: True
+                            color: 1, 1, 1, 1
+
+                    BoxLayout:
+                        orientation: "vertical"
+                        canvas.before:
+                            Color:
+                                rgba: 0.12, 0.12, 0.18, 1
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [dp(6)]
+                        Label:
+                            text: "Win Rate"
+                            font_size: dp(10)
+                            color: 0.5, 0.5, 0.5, 1
+                        Label:
+                            text: root.win_rate_text
+                            font_size: dp(15)
+                            bold: True
+                            color: 0.0, 0.85, 0.4, 1
+
+                    BoxLayout:
+                        orientation: "vertical"
+                        canvas.before:
+                            Color:
+                                rgba: 0.12, 0.12, 0.18, 1
+                            RoundedRectangle:
+                                pos: self.pos
+                                size: self.size
+                                radius: [dp(6)]
+                        Label:
+                            text: "PnL Total"
+                            font_size: dp(10)
+                            color: 0.5, 0.5, 0.5, 1
+                        Label:
+                            text: root.pnl_total_text
+                            font_size: dp(13)
+                            bold: True
+                            color: 0.7, 0.85, 1, 1
+
+                # ── BOT MAÎTRE ──
+                BoxLayout:
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: dp(200)
+                    padding: [dp(10), dp(6)]
+                    spacing: dp(6)
+                    canvas.before:
+                        Color:
+                            rgba: 0.04, 0.12, 0.06, 1
+                        RoundedRectangle:
+                            pos: self.pos
+                            size: self.size
+                            radius: [dp(10)]
+
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(28)
+                        Label:
+                            text: "[b]🤖 BOT MAÎTRE[/b]"
+                            markup: True
+                            font_size: dp(14)
+                            color: 0.0, 0.9, 0.45, 1
+                            halign: "left"
+                            size_hint_x: 0.55
+                        Label:
+                            text: root.master_active_text
+                            font_size: dp(13)
+                            bold: True
+                            color: root.master_active_color
+                            halign: "right"
+                            size_hint_x: 0.45
+
+                    GridLayout:
+                        cols: 2
+                        size_hint_y: None
+                        height: dp(60)
+                        spacing: dp(6)
+
+                        BoxLayout:
+                            orientation: "vertical"
+                            padding: [dp(8), dp(4)]
+                            canvas.before:
+                                Color:
+                                    rgba: 0.06, 0.18, 0.09, 1
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [dp(6)]
+                            Label:
+                                text: "Capital"
+                                font_size: dp(10)
+                                color: 0.4, 0.6, 0.4, 1
+                            Label:
+                                text: root.master_capital_text
+                                font_size: dp(16)
+                                bold: True
+                                color: 0.0, 0.9, 0.45, 1
+
+                        BoxLayout:
+                            orientation: "vertical"
+                            padding: [dp(8), dp(4)]
+                            canvas.before:
+                                Color:
+                                    rgba: 0.06, 0.18, 0.09, 1
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [dp(6)]
+                            Label:
+                                text: "ROI depuis départ"
+                                font_size: dp(10)
+                                color: 0.4, 0.6, 0.4, 1
+                            Label:
+                                text: root.master_roi_text
+                                font_size: dp(16)
+                                bold: True
+                                color: root.master_roi_color
+
+                    BoxLayout:
+                        size_hint_y: None
+                        height: dp(22)
+                        Label:
+                            text: root.master_positions
+                            font_size: dp(11)
+                            color: 0.55, 0.75, 0.55, 1
+                            halign: "left"
+                            size_hint_x: 0.5
+                        Label:
+                            text: root.master_pnl_text
+                            font_size: dp(12)
+                            bold: True
+                            color: root.master_pnl_color
+                            halign: "right"
+                            size_hint_x: 0.5
+
+                    Label:
+                        text: root.auto_status_text
+                        font_size: dp(10)
+                        color: 0.4, 0.6, 0.4, 1
+                        size_hint_y: None
+                        height: dp(20)
+                        halign: "left"
+                        text_size: self.size
+                        shorten: True
+
+                # ── Positions auto Bot Maître ──
+                BoxLayout:
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: dp(160)
+                    padding: [dp(10), dp(4)]
+                    spacing: dp(4)
+
+                    Label:
+                        text: "POSITIONS OUVERTES — BOT MAÎTRE"
+                        font_size: dp(11)
+                        color: 0.0, 0.6, 0.3, 1
+                        size_hint_y: None
+                        height: dp(20)
+
+                    ScrollView:
+                        GridLayout:
+                            id: auto_positions_grid
+                            cols: 1
+                            size_hint_y: None
+                            height: self.minimum_height
+                            spacing: dp(2)
+                            padding: [dp(4), dp(2)]
+
+                # ── Anciens portefeuilles ──
+                BoxLayout:
+                    orientation: "vertical"
+                    size_hint_y: None
+                    height: dp(110)
+                    padding: [dp(10), dp(4)]
+                    spacing: dp(4)
+
+                    Label:
+                        text: "PORTEFEUILLES ANCIENS (SECURITE / LIBRE)"
+                        font_size: dp(10)
+                        color: 0.35, 0.35, 0.35, 1
+                        size_hint_y: None
+                        height: dp(18)
+
+                    GridLayout:
+                        cols: 2
+                        size_hint_y: None
+                        height: dp(70)
+                        spacing: dp(6)
+
+                        BoxLayout:
+                            orientation: "vertical"
+                            padding: [dp(10), dp(6)]
+                            canvas.before:
+                                Color:
+                                    rgba: 0.07, 0.12, 0.22, 1
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [dp(8)]
+                            BoxLayout:
+                                size_hint_y: None
+                                height: dp(18)
+                                Label:
+                                    text: "SECURITE"
+                                    font_size: dp(10)
+                                    color: 0.4, 0.6, 1.0, 1
+                                    halign: "left"
+                                Label:
+                                    text: root.securite_active
+                                    font_size: dp(10)
+                                    color: root.securite_color
+                                    halign: "right"
+                            Label:
+                                text: root.securite_info
+                                font_size: dp(10)
+                                color: 0.65, 0.75, 0.9, 1
+                                halign: "left"
+
+                        BoxLayout:
+                            orientation: "vertical"
+                            padding: [dp(10), dp(6)]
+                            canvas.before:
+                                Color:
+                                    rgba: 0.22, 0.10, 0.04, 1
+                                RoundedRectangle:
+                                    pos: self.pos
+                                    size: self.size
+                                    radius: [dp(8)]
+                            BoxLayout:
+                                size_hint_y: None
+                                height: dp(18)
+                                Label:
+                                    text: "LIBRE"
+                                    font_size: dp(10)
+                                    color: 1.0, 0.55, 0.1, 1
+                                    halign: "left"
+                                Label:
+                                    text: root.libre_active
+                                    font_size: dp(10)
+                                    color: root.libre_color
+                                    halign: "right"
+                            Label:
+                                text: root.libre_info
+                                font_size: dp(10)
+                                color: 0.9, 0.7, 0.4, 1
+                                halign: "left"
+
+                # Bouton Export CSV (V14)
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(48)
+                    padding: [dp(10), dp(4)]
+                    Button:
+                        text: "📤 Export CSV des trades"
+                        background_color: 0.20, 0.45, 0.55, 1
+                        font_size: dp(12)
+                        on_press: root.export_trades_csv()
+
+                # ── Positions / Historique / Journal (hauteurs fixes) ──
+                Label:
+                    text: "POSITIONS OUVERTES"
+                    font_size: dp(11)
+                    color: 0.4, 0.4, 0.4, 1
+                    size_hint_y: None
+                    height: dp(24)
+
+                ScrollView:
+                    size_hint_y: None
+                    height: dp(180)
+                    GridLayout:
+                        id: positions_grid
+                        cols: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: dp(6)
+                        padding: [dp(8), dp(4)]
+
+                Label:
+                    text: "HISTORIQUE DES TRADES"
+                    font_size: dp(11)
+                    color: 0.4, 0.4, 0.4, 1
+                    size_hint_y: None
+                    height: dp(24)
+
+                ScrollView:
+                    size_hint_y: None
+                    height: dp(180)
+                    GridLayout:
+                        id: history_grid
+                        cols: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: dp(2)
+                        padding: [dp(8), dp(4)]
+
+                Label:
+                    text: "JOURNAL AUTO-TRADER"
+                    font_size: dp(11)
+                    color: 0.4, 0.4, 0.4, 1
+                    size_hint_y: None
+                    height: dp(24)
+
+                ScrollView:
+                    size_hint_y: None
+                    height: dp(180)
+                    GridLayout:
+                        id: auto_log_grid
+                        cols: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: dp(2)
+                        padding: [dp(4), dp(2)]
+
+        # Navigation (toujours visible)
+        BoxLayout:
+            size_hint_y: None
+            height: dp(52)
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.15, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Button:
+                text: "◉ Dashboard"
+                background_color: 0.12, 0.12, 0.18, 0
+                font_size: dp(12)
+                on_press: app.root.current = "dashboard"
+            Button:
+                text: "⚡ Signaux"
+                background_color: 0.12, 0.12, 0.18, 0
+                font_size: dp(12)
+                on_press: app.root.current = "signals"
+            Button:
+                text: "[b]💼 Portfolio[/b]"
+                markup: True
+                background_color: 0.0, 0.50, 0.25, 1
+                font_size: dp(12)
+                on_press: app.root.current = "portfolio"
+            Button:
+                text: "⚙ Config"
+                background_color: 0.12, 0.12, 0.18, 0
+                font_size: dp(12)
+                on_press: app.root.current = "settings"

@@ -1,0 +1,83 @@
+# ─── Secrets — JAMAIS commit ──────────────────────────────────────────────
+.mstream_salt
+.env
+*.key
+*.pem
+secrets/
+config_local.py
+
+# ─── Bases de données & données locales ───────────────────────────────────
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+mstream_trader.db*
+backups/
+exports/
+screenshots/
+logs/
+
+# ─── Python ───────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+develop-eggs/
+.installed.cfg
+MANIFEST
+.python-version
+
+# ─── Virtual environments ─────────────────────────────────────────────────
+.venv/
+.venv*/
+venv/
+env/
+ENV/
+Lib/
+Scripts/
+Include/
+pyvenv.cfg
+
+# ─── Tests / coverage ─────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# ─── Buildozer / Android ──────────────────────────────────────────────────
+.buildozer/
+bin/
+*.apk
+*.aab
+*.keystore
+debug.keystore
+release.keystore
+
+# ─── Kivy ─────────────────────────────────────────────────────────────────
+.kivy/
+
+# ─── IDE / Editors ────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Logs / runtime ───────────────────────────────────────────────────────
+*.log
+*.tmp
+nohup.out

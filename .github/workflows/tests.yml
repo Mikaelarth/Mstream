@@ -1,0 +1,41 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  pytest:
+    name: Pytest suite
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        working-directory: MstreamTrader
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+
+      - name: Run pytest
+        working-directory: MstreamTrader
+        run: |
+          python -m pytest tests/ -v --tb=short
+
+      - name: Compile check
+        working-directory: MstreamTrader
+        run: |
+          python -m compileall -q core/ tests/ main.py run_backtest.py optimize_params.py

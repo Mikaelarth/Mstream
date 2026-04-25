@@ -1,0 +1,779 @@
+#:kivy 2.0
+#:import dp kivy.metrics.dp
+
+<SettingsScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: 0.07, 0.07, 0.10, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        # Header
+        BoxLayout:
+            size_hint_y: None
+            height: dp(52)
+            padding: [dp(16), dp(8)]
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.15, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Label:
+                text: "[b]⚙ Configuration[/b]"
+                markup: True
+                font_size: dp(20)
+                color: 1, 1, 1, 1
+
+        ScrollView:
+            BoxLayout:
+                orientation: "vertical"
+                size_hint_y: None
+                height: self.minimum_height
+                padding: [dp(16), dp(12)]
+                spacing: dp(14)
+
+                # Section Binance
+                Label:
+                    text: "[b]🔑 CONNEXION BINANCE[/b]"
+                    markup: True
+                    font_size: dp(13)
+                    color: 0.4, 0.75, 1, 1
+                    size_hint_y: None
+                    height: dp(28)
+                    halign: "left"
+
+                Label:
+                    text: "Clé API Binance"
+                    font_size: dp(12)
+                    color: 0.6, 0.6, 0.6, 1
+                    size_hint_y: None
+                    height: dp(20)
+                    halign: "left"
+
+                TextInput:
+                    id: api_key_input
+                    hint_text: "Votre clé API Binance"
+                    font_size: dp(13)
+                    size_hint_y: None
+                    height: dp(40)
+                    background_color: 0.15, 0.15, 0.20, 1
+                    foreground_color: 1, 1, 1, 1
+                    password: False
+                    multiline: False
+
+                Label:
+                    text: "Clé Secrète API"
+                    font_size: dp(12)
+                    color: 0.6, 0.6, 0.6, 1
+                    size_hint_y: None
+                    height: dp(20)
+                    halign: "left"
+
+                TextInput:
+                    id: api_secret_input
+                    hint_text: "Votre clé secrète Binance"
+                    font_size: dp(13)
+                    size_hint_y: None
+                    height: dp(40)
+                    background_color: 0.15, 0.15, 0.20, 1
+                    foreground_color: 1, 1, 1, 1
+                    password: True
+                    multiline: False
+
+                Button:
+                    text: "💾 Sauvegarder & Tester la connexion"
+                    size_hint_y: None
+                    height: dp(44)
+                    background_color: 0.1, 0.4, 0.8, 1
+                    font_size: dp(13)
+                    on_press: root.save_api_keys()
+
+                Button:
+                    text: "🔄 Synchroniser solde depuis Binance"
+                    size_hint_y: None
+                    height: dp(38)
+                    background_color: 0.1, 0.3, 0.6, 1
+                    font_size: dp(12)
+                    on_press: root.sync_binance_balance()
+
+                # Section Solde initial
+                Label:
+                    text: "[b]💰 CAPITAL DE TRADING[/b]"
+                    markup: True
+                    font_size: dp(13)
+                    color: 0.4, 0.75, 1, 1
+                    size_hint_y: None
+                    height: dp(28)
+                    halign: "left"
+
+                Label:
+                    text: "Solde USDT disponible"
+                    font_size: dp(12)
+                    color: 0.6, 0.6, 0.6, 1
+                    size_hint_y: None
+                    height: dp(20)
+                    halign: "left"
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(44)
+                    spacing: dp(8)
+                    TextInput:
+                        id: balance_input
+                        hint_text: "1000.00"
+                        font_size: dp(15)
+                        background_color: 0.15, 0.15, 0.20, 1
+                        foreground_color: 1, 1, 1, 1
+                        input_filter: "float"
+                        multiline: False
+                    Button:
+                        text: "✓"
+                        size_hint_x: None
+                        width: dp(50)
+                        background_color: 0.0, 0.6, 0.3, 1
+                        font_size: dp(18)
+                        on_press: root.save_balance()
+
+                # Section Risque
+                Label:
+                    text: "[b]🛡 GESTION DU RISQUE[/b]"
+                    markup: True
+                    font_size: dp(13)
+                    color: 0.4, 0.75, 1, 1
+                    size_hint_y: None
+                    height: dp(28)
+                    halign: "left"
+
+                Label:
+                    text: "Risque par trade (% du capital)"
+                    font_size: dp(12)
+                    color: 0.6, 0.6, 0.6, 1
+                    size_hint_y: None
+                    height: dp(20)
+                    halign: "left"
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(44)
+                    spacing: dp(8)
+                    TextInput:
+                        id: risk_input
+                        hint_text: "2.0"
+                        font_size: dp(15)
+                        background_color: 0.15, 0.15, 0.20, 1
+                        foreground_color: 1, 1, 1, 1
+                        input_filter: "float"
+                        multiline: False
+                    Button:
+                        text: "✓"
+                        size_hint_x: None
+                        width: dp(50)
+                        background_color: 0.0, 0.6, 0.3, 1
+                        font_size: dp(18)
+                        on_press: root.save_risk_settings()
+
+                # Section Auto-Trade
+                Label:
+                    text: "[b]🤖 TRADING AUTOMATIQUE[/b]"
+                    markup: True
+                    font_size: dp(13)
+                    color: 0.4, 0.75, 1, 1
+                    size_hint_y: None
+                    height: dp(28)
+                    halign: "left"
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(48)
+                    Label:
+                        text: "Exécution auto des signaux forts"
+                        font_size: dp(13)
+                        color: 0.8, 0.8, 0.8, 1
+                        halign: "left"
+                    Switch:
+                        id: auto_switch
+                        size_hint_x: None
+                        width: dp(80)
+                        on_active: root.toggle_auto_trade(self.active)
+
+                Label:
+                    text: "⚠ Le trading automatique utilise de l'argent réel.\nAssurez-vous de comprendre les risques."
+                    font_size: dp(11)
+                    color: 0.9, 0.6, 0.1, 1
+                    size_hint_y: None
+                    height: dp(36)
+                    halign: "left"
+
+                # ─── BOT MAÎTRE ──────────────────────────────────────────
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(2)
+                    canvas.before:
+                        Color:
+                            rgba: 0.0, 0.85, 0.4, 0.3
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+
+                Label:
+                    text: "[b]🤖 BOT MAÎTRE — TRADING AUTONOME[/b]"
+                    markup: True
+                    font_size: dp(14)
+                    color: 0.0, 0.9, 0.45, 1
+                    size_hint_y: None
+                    height: dp(32)
+                    halign: "left"
+
+                Label:
+                    text: root.master_roi_text
+                    font_size: dp(12)
+                    color: root.master_roi_color
+                    size_hint_y: None
+                    height: dp(22)
+                    halign: "left"
+
+                Label:
+                    text: "Toutes cryptos  |  Score >= 55  |  Confiance >= 65 %  |  R/R >= 2.5\nMax 4 positions  |  80 % du budget max investi  |  Stop-Loss Trailing\nDrawdown max 20 % -> pause automatique"
+                    font_size: dp(10)
+                    color: 0.35, 0.7, 0.4, 1
+                    size_hint_y: None
+                    height: dp(44)
+                    halign: "left"
+
+                Label:
+                    text: "Capital alloué au Bot (USDT)"
+                    font_size: dp(12)
+                    color: 0.6, 0.6, 0.6, 1
+                    size_hint_y: None
+                    height: dp(20)
+                    halign: "left"
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(44)
+                    spacing: dp(8)
+                    TextInput:
+                        id: budget_master_input
+                        hint_text: "ex: 1000"
+                        font_size: dp(15)
+                        background_color: 0.10, 0.18, 0.12, 1
+                        foreground_color: 0.0, 1, 0.5, 1
+                        input_filter: "float"
+                        multiline: False
+                    Button:
+                        text: "✓ Allouer"
+                        size_hint_x: None
+                        width: dp(80)
+                        background_color: 0.0, 0.55, 0.25, 1
+                        font_size: dp(12)
+                        on_press: root.save_budget_master()
+
+                Label:
+                    text: "Risque par trade (% du capital — défaut 5 %)"
+                    font_size: dp(12)
+                    color: 0.6, 0.6, 0.6, 1
+                    size_hint_y: None
+                    height: dp(20)
+                    halign: "left"
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(44)
+                    spacing: dp(8)
+                    TextInput:
+                        id: risk_master_input
+                        hint_text: "5.0"
+                        font_size: dp(15)
+                        background_color: 0.10, 0.18, 0.12, 1
+                        foreground_color: 0.0, 1, 0.5, 1
+                        input_filter: "float"
+                        multiline: False
+                    Button:
+                        text: "✓"
+                        size_hint_x: None
+                        width: dp(50)
+                        background_color: 0.0, 0.55, 0.25, 1
+                        font_size: dp(18)
+                        on_press: root.save_risk_master()
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(52)
+                    padding: [dp(8), dp(4)]
+                    canvas.before:
+                        Color:
+                            rgba: 0.05, 0.15, 0.08, 1
+                        RoundedRectangle:
+                            pos: self.pos
+                            size: self.size
+                            radius: [dp(8)]
+                    Label:
+                        text: "[b]ACTIVER LE BOT MAÎTRE[/b]"
+                        markup: True
+                        font_size: dp(14)
+                        color: 0.0, 0.9, 0.45, 1
+                        halign: "left"
+                    Switch:
+                        id: master_switch
+                        size_hint_x: None
+                        width: dp(80)
+                        on_active: root.toggle_master(self.active)
+
+                Button:
+                    text: "↺ Réinitialiser le capital initial (point de référence ROI)"
+                    size_hint_y: None
+                    height: dp(36)
+                    background_color: 0.15, 0.15, 0.15, 1
+                    font_size: dp(11)
+                    color: 0.5, 0.5, 0.5, 1
+                    on_press: root.reset_master_initial()
+
+                # ─── Portefeuille Sécurité ────────────────────────────────
+                Label:
+                    text: "[b]PORTEFEUILLE SECURITE[/b]"
+                    markup: True
+                    font_size: dp(13)
+                    color: 0.3, 0.6, 1.0, 1
+                    size_hint_y: None
+                    height: dp(28)
+                    halign: "left"
+
+                Label:
+                    text: "BTC/ETH/BNB/SOL/XRP | R/R min 3.0 | Risque 1%/trade | Max 3 positions"
+                    font_size: dp(11)
+                    color: 0.5, 0.7, 0.9, 1
+                    size_hint_y: None
+                    height: dp(22)
+                    halign: "left"
+
+                Label:
+                    text: "Budget alloue (USDT)"
+                    font_size: dp(12)
+                    color: 0.6, 0.6, 0.6, 1
+                    size_hint_y: None
+                    height: dp(20)
+                    halign: "left"
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(44)
+                    spacing: dp(8)
+                    TextInput:
+                        id: budget_securite_input
+                        hint_text: "ex: 500"
+                        font_size: dp(15)
+                        background_color: 0.15, 0.15, 0.20, 1
+                        foreground_color: 1, 1, 1, 1
+                        input_filter: "float"
+                        multiline: False
+                    Button:
+                        text: "Sauv"
+                        size_hint_x: None
+                        width: dp(60)
+                        background_color: 0.1, 0.4, 0.8, 1
+                        font_size: dp(12)
+                        on_press: root.save_budget_securite()
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(48)
+                    Label:
+                        text: "Activer trading auto Securite"
+                        font_size: dp(13)
+                        color: 0.8, 0.8, 0.8, 1
+                        halign: "left"
+                    Switch:
+                        id: securite_switch
+                        size_hint_x: None
+                        width: dp(80)
+                        on_active: root.toggle_securite(self.active)
+
+                # ─── Portefeuille Libre ───────────────────────────────────
+                Label:
+                    text: "[b]PORTEFEUILLE LIBRE[/b]"
+                    markup: True
+                    font_size: dp(13)
+                    color: 1.0, 0.55, 0.1, 1
+                    size_hint_y: None
+                    height: dp(28)
+                    halign: "left"
+
+                Label:
+                    text: "Toutes cryptos | R/R min 2.0 | Risque configurable | Max 5 positions"
+                    font_size: dp(11)
+                    color: 0.9, 0.65, 0.3, 1
+                    size_hint_y: None
+                    height: dp(22)
+                    halign: "left"
+
+                Label:
+                    text: "Budget alloue (USDT)"
+                    font_size: dp(12)
+                    color: 0.6, 0.6, 0.6, 1
+                    size_hint_y: None
+                    height: dp(20)
+                    halign: "left"
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(44)
+                    spacing: dp(8)
+                    TextInput:
+                        id: budget_libre_input
+                        hint_text: "ex: 200"
+                        font_size: dp(15)
+                        background_color: 0.15, 0.15, 0.20, 1
+                        foreground_color: 1, 1, 1, 1
+                        input_filter: "float"
+                        multiline: False
+                    Button:
+                        text: "Sauv"
+                        size_hint_x: None
+                        width: dp(60)
+                        background_color: 0.9, 0.4, 0.0, 1
+                        font_size: dp(12)
+                        on_press: root.save_budget_libre()
+
+                Label:
+                    text: "Risque par trade (% du budget)"
+                    font_size: dp(12)
+                    color: 0.6, 0.6, 0.6, 1
+                    size_hint_y: None
+                    height: dp(20)
+                    halign: "left"
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(44)
+                    spacing: dp(8)
+                    TextInput:
+                        id: risk_libre_input
+                        hint_text: "3.0"
+                        font_size: dp(15)
+                        background_color: 0.15, 0.15, 0.20, 1
+                        foreground_color: 1, 1, 1, 1
+                        input_filter: "float"
+                        multiline: False
+                    Button:
+                        text: "Sauv"
+                        size_hint_x: None
+                        width: dp(60)
+                        background_color: 0.9, 0.4, 0.0, 1
+                        font_size: dp(12)
+                        on_press: root.save_risk_libre()
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(48)
+                    Label:
+                        text: "Activer trading auto Libre"
+                        font_size: dp(13)
+                        color: 0.8, 0.8, 0.8, 1
+                        halign: "left"
+                    Switch:
+                        id: libre_switch
+                        size_hint_x: None
+                        width: dp(80)
+                        on_active: root.toggle_libre(self.active)
+
+                Label:
+                    text: "Les cycles d'analyse tournent toutes les 5 minutes automatiquement."
+                    font_size: dp(11)
+                    color: 0.9, 0.6, 0.1, 1
+                    size_hint_y: None
+                    height: dp(28)
+                    halign: "left"
+
+                # ─── PAPER TRADING MODE ───────────────────────────────────
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(2)
+                    canvas.before:
+                        Color:
+                            rgba: 0.95, 0.65, 0.0, 0.3
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+
+                Label:
+                    text: "[b]📝 PAPER TRADING (mode simulation)[/b]"
+                    markup: True
+                    font_size: dp(14)
+                    color: 0.95, 0.7, 0.1, 1
+                    size_hint_y: None
+                    height: dp(32)
+                    halign: "left"
+
+                Label:
+                    text: "Trade en virtuel sur ledger séparé (zero risque réel). Le bot continue d'analyser le marché en temps réel mais simule les ordres."
+                    font_size: dp(10)
+                    color: 0.7, 0.6, 0.4, 1
+                    size_hint_y: None
+                    height: dp(28)
+                    halign: "left"
+                    text_size: self.width, None
+
+                Label:
+                    text: "Budget paper initial (USDT virtuels)"
+                    font_size: dp(12)
+                    color: 0.6, 0.6, 0.6, 1
+                    size_hint_y: None
+                    height: dp(20)
+                    halign: "left"
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(44)
+                    spacing: dp(8)
+                    TextInput:
+                        id: paper_budget_input
+                        hint_text: "ex: 1000"
+                        font_size: dp(15)
+                        background_color: 0.18, 0.14, 0.06, 1
+                        foreground_color: 1, 0.85, 0.4, 1
+                        input_filter: "float"
+                        multiline: False
+                    Button:
+                        text: "Sauv"
+                        size_hint_x: None
+                        width: dp(60)
+                        background_color: 0.7, 0.45, 0.0, 1
+                        font_size: dp(12)
+                        on_press: root.save_paper_budget()
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(48)
+                    Label:
+                        text: "[b]Activer paper mode[/b]"
+                        markup: True
+                        font_size: dp(13)
+                        color: 0.95, 0.7, 0.1, 1
+                        halign: "left"
+                    Switch:
+                        id: paper_switch
+                        size_hint_x: None
+                        width: dp(80)
+                        on_active: root.toggle_paper_mode(self.active)
+
+                Label:
+                    text: root.paper_roi_text
+                    font_size: dp(11)
+                    color: 0.85, 0.7, 0.3, 1
+                    size_hint_y: None
+                    height: dp(22)
+                    halign: "left"
+
+                # ─── TELEGRAM ─────────────────────────────────────────────
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(2)
+                    canvas.before:
+                        Color:
+                            rgba: 0.0, 0.55, 0.85, 0.3
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+
+                Label:
+                    text: "[b]📨 NOTIFICATIONS TELEGRAM[/b]"
+                    markup: True
+                    font_size: dp(14)
+                    color: 0.2, 0.7, 1, 1
+                    size_hint_y: None
+                    height: dp(32)
+                    halign: "left"
+
+                Label:
+                    text: "Recevez ENTRY/EXIT, alertes Circuit Breaker, résumés quotidiens. Token via @BotFather, chat_id via @userinfobot."
+                    font_size: dp(10)
+                    color: 0.5, 0.6, 0.7, 1
+                    size_hint_y: None
+                    height: dp(28)
+                    halign: "left"
+                    text_size: self.width, None
+
+                Label:
+                    text: "Bot Token"
+                    font_size: dp(12)
+                    color: 0.6, 0.6, 0.6, 1
+                    size_hint_y: None
+                    height: dp(20)
+                    halign: "left"
+
+                TextInput:
+                    id: telegram_token_input
+                    hint_text: "123456:ABC-..."
+                    font_size: dp(13)
+                    size_hint_y: None
+                    height: dp(40)
+                    background_color: 0.10, 0.18, 0.25, 1
+                    foreground_color: 0.7, 0.9, 1, 1
+                    multiline: False
+                    password: True
+
+                Label:
+                    text: "Chat ID"
+                    font_size: dp(12)
+                    color: 0.6, 0.6, 0.6, 1
+                    size_hint_y: None
+                    height: dp(20)
+                    halign: "left"
+
+                TextInput:
+                    id: telegram_chat_input
+                    hint_text: "ex: 123456789"
+                    font_size: dp(13)
+                    size_hint_y: None
+                    height: dp(40)
+                    background_color: 0.10, 0.18, 0.25, 1
+                    foreground_color: 0.7, 0.9, 1, 1
+                    multiline: False
+
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(44)
+                    spacing: dp(6)
+                    Button:
+                        text: "Sauvegarder"
+                        background_color: 0.1, 0.4, 0.7, 1
+                        font_size: dp(12)
+                        on_press: root.save_telegram_credentials()
+                    Button:
+                        text: "Tester"
+                        background_color: 0.0, 0.55, 0.85, 1
+                        font_size: dp(12)
+                        on_press: root.test_telegram_connection()
+                    Button:
+                        text: "Effacer"
+                        background_color: 0.4, 0.4, 0.4, 1
+                        font_size: dp(12)
+                        on_press: root.clear_telegram_credentials()
+
+                Label:
+                    text: root.telegram_status
+                    font_size: dp(11)
+                    color: root.telegram_color
+                    size_hint_y: None
+                    height: dp(22)
+                    halign: "left"
+
+                # ─── EMERGENCY STOP ───────────────────────────────────────
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(2)
+                    canvas.before:
+                        Color:
+                            rgba: 0.85, 0.1, 0.1, 0.4
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+
+                Label:
+                    text: "[b]🛑 EMERGENCY STOP[/b]"
+                    markup: True
+                    font_size: dp(14)
+                    color: 0.95, 0.3, 0.2, 1
+                    size_hint_y: None
+                    height: dp(32)
+                    halign: "left"
+
+                Label:
+                    text: "Ferme TOUTES les positions auto au prix marché actuel. Double-tap pour confirmer."
+                    font_size: dp(10)
+                    color: 0.7, 0.4, 0.4, 1
+                    size_hint_y: None
+                    height: dp(28)
+                    halign: "left"
+                    text_size: self.width, None
+
+                Button:
+                    text: "[b]🛑 FERMER TOUTES LES POSITIONS[/b]"
+                    markup: True
+                    size_hint_y: None
+                    height: dp(48)
+                    background_color: 0.7, 0.1, 0.1, 1
+                    font_size: dp(13)
+                    on_press: root.emergency_stop_all()
+
+                # ─── BACKTEST ─────────────────────────────────────────────
+                BoxLayout:
+                    size_hint_y: None
+                    height: dp(2)
+                    canvas.before:
+                        Color:
+                            rgba: 0.5, 0.4, 0.85, 0.3
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+
+                Label:
+                    text: "[b]🔬 BACKTEST ENGINE[/b]"
+                    markup: True
+                    font_size: dp(14)
+                    color: 0.65, 0.55, 1, 1
+                    size_hint_y: None
+                    height: dp(32)
+                    halign: "left"
+
+                Label:
+                    text: "Simulez la stratégie sur historique réel pour mesurer Sharpe, Max DD, Win Rate."
+                    font_size: dp(10)
+                    color: 0.55, 0.5, 0.7, 1
+                    size_hint_y: None
+                    height: dp(24)
+                    halign: "left"
+                    text_size: self.width, None
+
+                Button:
+                    text: "Lancer un backtest"
+                    size_hint_y: None
+                    height: dp(44)
+                    background_color: 0.4, 0.3, 0.75, 1
+                    font_size: dp(13)
+                    on_press: app.root.current = "backtest"
+
+                # Message de statut
+                Label:
+                    text: root.status_text
+                    font_size: dp(13)
+                    color: root.status_color
+                    size_hint_y: None
+                    height: dp(36)
+                    halign: "left"
+
+        # Navigation
+        BoxLayout:
+            size_hint_y: None
+            height: dp(52)
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.15, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Button:
+                text: "◉ Dashboard"
+                background_color: 0.12, 0.12, 0.18, 0
+                font_size: dp(12)
+                on_press: app.root.current = "dashboard"
+            Button:
+                text: "⚡ Signaux"
+                background_color: 0.12, 0.12, 0.18, 0
+                font_size: dp(12)
+                on_press: app.root.current = "signals"
+            Button:
+                text: "💼 Portfolio"
+                background_color: 0.12, 0.12, 0.18, 0
+                font_size: dp(12)
+                on_press: app.root.current = "portfolio"
+            Button:
+                text: "[b]⚙ Config[/b]"
+                markup: True
+                background_color: 0.0, 0.50, 0.25, 1
+                font_size: dp(12)
+                on_press: app.root.current = "settings"

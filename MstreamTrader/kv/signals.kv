@@ -1,0 +1,131 @@
+#:kivy 2.0
+#:import dp kivy.metrics.dp
+
+<SignalsScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        canvas.before:
+            Color:
+                rgba: 0.07, 0.07, 0.10, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        # Header
+        BoxLayout:
+            size_hint_y: None
+            height: dp(52)
+            padding: [dp(16), dp(8)]
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.15, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Label:
+                text: "[b]⚡ Signaux de Trading[/b]"
+                markup: True
+                font_size: dp(20)
+                color: 1, 1, 1, 1
+                halign: "left"
+            Label:
+                text: root.count_text
+                font_size: dp(12)
+                color: 0.5, 0.5, 0.5, 1
+                halign: "right"
+
+        # Filtres
+        ScrollView:
+            size_hint_y: None
+            height: dp(44)
+            do_scroll_y: False
+            BoxLayout:
+                size_hint_x: None
+                width: dp(500)
+                spacing: dp(6)
+                padding: [dp(8), dp(6)]
+                Button:
+                    text: "TOUS"
+                    size_hint_x: None
+                    width: dp(70)
+                    font_size: dp(11)
+                    background_color: 0.2, 0.5, 0.9, 1
+                    on_press: root.set_filter("TOUS")
+                Button:
+                    text: "ACHAT FORT"
+                    size_hint_x: None
+                    width: dp(100)
+                    font_size: dp(11)
+                    background_color: 0.0, 0.6, 0.3, 1
+                    on_press: root.set_filter("ACHAT FORT")
+                Button:
+                    text: "ACHAT"
+                    size_hint_x: None
+                    width: dp(70)
+                    font_size: dp(11)
+                    background_color: 0.0, 0.5, 0.2, 1
+                    on_press: root.set_filter("ACHAT")
+                Button:
+                    text: "CONSERVER"
+                    size_hint_x: None
+                    width: dp(100)
+                    font_size: dp(11)
+                    background_color: 0.5, 0.4, 0.0, 1
+                    on_press: root.set_filter("CONSERVER")
+                Button:
+                    text: "VENTE"
+                    size_hint_x: None
+                    width: dp(70)
+                    font_size: dp(11)
+                    background_color: 0.6, 0.2, 0.0, 1
+                    on_press: root.set_filter("VENTE")
+                Button:
+                    text: "VENTE FORTE"
+                    size_hint_x: None
+                    width: dp(100)
+                    font_size: dp(11)
+                    background_color: 0.7, 0.05, 0.05, 1
+                    on_press: root.set_filter("VENTE FORTE")
+
+        # Grille des signaux
+        ScrollView:
+            GridLayout:
+                id: signals_grid
+                cols: 1
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: dp(8)
+                padding: [dp(8), dp(8)]
+
+        # Navigation
+        BoxLayout:
+            size_hint_y: None
+            height: dp(52)
+            spacing: 0
+            canvas.before:
+                Color:
+                    rgba: 0.10, 0.10, 0.15, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Button:
+                text: "◉ Dashboard"
+                background_color: 0.12, 0.12, 0.18, 0
+                font_size: dp(12)
+                on_press: app.root.current = "dashboard"
+            Button:
+                text: "[b]⚡ Signaux[/b]"
+                markup: True
+                background_color: 0.0, 0.50, 0.25, 1
+                font_size: dp(12)
+                on_press: app.root.current = "signals"
+            Button:
+                text: "💼 Portfolio"
+                background_color: 0.12, 0.12, 0.18, 0
+                font_size: dp(12)
+                on_press: app.root.current = "portfolio"
+            Button:
+                text: "⚙ Config"
+                background_color: 0.12, 0.12, 0.18, 0
+                font_size: dp(12)
+                on_press: app.root.current = "settings"
