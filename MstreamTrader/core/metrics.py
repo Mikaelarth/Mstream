@@ -105,9 +105,12 @@ def sharpe_ratio(returns: list[float], periods_per_year: int = 252,
     mean = sum(returns) / len(returns)
     excess = mean - risk_free_rate / periods_per_year
     variance = sum((r - mean) ** 2 for r in returns) / (len(returns) - 1)
-    std = math.sqrt(variance)
-    if std <= 0:
+    # Tolérance : sum((x-mean)**2) sur returns "constants" donne une variance
+    # ~ 1e-32 due à la précision IEEE-754 (mean != x exactement après division).
+    # Sans cette guard, std finit à ~1e-16 et excess/std explose à ~1e+16.
+    if variance < 1e-20:
         return 0.0
+    std = math.sqrt(variance)
     return (excess / std) * math.sqrt(periods_per_year)
 
 
@@ -125,9 +128,9 @@ def sortino_ratio(returns: list[float], periods_per_year: int = 252,
     if not downside:
         return float("inf") if excess > 0 else 0.0
     downside_variance = sum(r ** 2 for r in downside) / len(returns)
-    downside_std = math.sqrt(downside_variance)
-    if downside_std <= 0:
+    if downside_variance < 1e-20:
         return 0.0
+    downside_std = math.sqrt(downside_variance)
     return (excess / downside_std) * math.sqrt(periods_per_year)
 
 
