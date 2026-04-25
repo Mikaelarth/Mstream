@@ -40,25 +40,24 @@ setup_logging(console=False)
 
 # ── Enregistrer une police compatible emoji ──────────────────────────────────
 # La police Roboto par défaut de Kivy ne contient pas les glyphs emoji
-# (📊 ⚡ 💼 ⚙ 🔬 ...). On enregistre "Segoe UI Emoji" sous Windows et
-# "DejaVu Sans" / "Noto Color Emoji" sous Linux/Android comme alternative.
+# (📊 ⚡ 💼 ⚙ 🔬 ...).
+#
+# IMPORTANT : sur Android, /system/fonts/NotoColorEmoji.ttf existe mais
+# NE CONTIENT PAS LES CARACTÈRES LATINS — la remplacer briserait TOUT le
+# rendu (Latin → carrés). On limite donc la substitution à Windows où
+# Segoe UI Emoji a Latin + emoji, et on laisse Kivy utiliser son Roboto
+# bundlé par défaut sur Android (les emojis seront en carrés mais Latin OK).
 def _register_emoji_font():
+    if sys.platform != "win32":
+        return None   # Android/Linux : ne pas toucher Roboto, sinon crash visuel
     from kivy.core.text import LabelBase
-    candidates = [
-        # Windows : Segoe UI Emoji présent par défaut depuis Win 8.1
-        r"C:\Windows\Fonts\seguiemj.ttf",
-        # Linux / Android (si présent)
-        "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
-        "/system/fonts/NotoColorEmoji.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    ]
-    for p in candidates:
-        if os.path.exists(p):
-            try:
-                LabelBase.register(name="Roboto", fn_regular=p)
-                return p
-            except Exception:
-                continue
+    candidate = r"C:\Windows\Fonts\seguiemj.ttf"
+    if os.path.exists(candidate):
+        try:
+            LabelBase.register(name="Roboto", fn_regular=candidate)
+            return candidate
+        except Exception:
+            pass
     return None
 
 _emoji_font = _register_emoji_font()
