@@ -309,10 +309,18 @@ def _compute_stop_take(
     return round(stop_loss, 6), round(take_profit, 6), rr_ratio
 
 
-def analyze(coin_id: str, symbol: str, indicators: dict) -> TradeSignal:
+def analyze(coin_id: str, symbol: str, indicators: dict,
+            require_uptrend_for_buy: bool = False) -> TradeSignal:
     """
     Analyse complète multi-indicateurs.
     Génère un signal de trading avec score de confiance.
+
+    Args:
+        require_uptrend_for_buy : si True, force HOLD pour les signaux
+            BUY/STRONG_BUY quand le prix est SOUS l'EMA 50 (= downtrend).
+            Évite les "catching falling knives" classiques :
+            le bot achète sur RSI oversold mais en plein downtrend, et se
+            fait stopper. Recommandé en backtest pour mesurer l'effet.
     """
     price = indicators.get("current_price", 0)
     if price == 0:
@@ -390,6 +398,21 @@ def analyze(coin_id: str, symbol: str, indicators: dict) -> TradeSignal:
         indicators.get("resistances", []),
         min_rr=2.0,
     )
+
+    # Filtre tendance OBLIGATOIRE (si activé) : on ne BUY pas en
+    # downtrend, même si RSI/Stoch sont oversold. Évite le "catching
+    # a falling knife" classique. Désactivé par défaut pour rétro-compat,
+    # à activer dans le backtest pour mesurer l'effet sur le Sharpe.
+    ema_50 = indicators.get("ema_50")
+    if (require_uptrend_for_buy
+            and ema_50 is not None
+            and signal in (Signal.STRONG_BUY, Signal.BUY)
+            and price < ema_50):
+        all_reasons.insert(
+            0,
+            f"Filtre tendance : prix {price:.4f} < EMA50 {ema_50:.4f} → HOLD"
+        )
+        signal = Signal.HOLD
 
     # Garde-fou final : si malgré tout le R/R est faible (<1.5), on
     # dégrade le signal — on ne dit JAMAIS "ACHAT FORT" sur un trade

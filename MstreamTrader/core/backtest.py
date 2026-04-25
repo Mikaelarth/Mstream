@@ -87,6 +87,11 @@ class BacktestConfig:
     regime_ema_period:        int   = 200
     regime_threshold_pct:     float = 2.0
 
+    # Filtre de tendance EMA50 — ne BUY pas si prix < EMA50 (downtrend).
+    # Très efficace contre les "catching a falling knife". À tester en
+    # backtest pour mesurer l'impact réel sur le Sharpe.
+    require_uptrend_for_buy:  bool  = False
+
     # ── Modules Institutional Grade (DOIVENT refléter MASTER_CONFIG du bot live) ──
     use_ensemble:             bool  = True    # vote 3 stratégies
     min_ensemble_agreement:   int   = 2       # ≥ 2/3 stratégies d'accord
@@ -608,7 +613,10 @@ class Backtest:
                 continue
 
             indics["current_price"] = candles[idx]["close"]
-            ts_signal = signals.analyze(cid, cid[:4].upper(), indics)
+            ts_signal = signals.analyze(
+                cid, cid[:4].upper(), indics,
+                require_uptrend_for_buy=self.config.require_uptrend_for_buy,
+            )
 
             state["signals_analyzed"] = state.get("signals_analyzed", 0) + 1
 
