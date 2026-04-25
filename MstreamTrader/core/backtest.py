@@ -796,8 +796,13 @@ class Backtest:
             return None
 
     def _qualifies(self, sig, profile: dict) -> bool:
-        """Filtre paramétré par un profil (régime-adaptatif ou fixe)."""
-        if sig.signal is not Signal.STRONG_BUY:
+        """Filtre paramétré par un profil (régime-adaptatif ou fixe).
+
+        Accepte BUY ET STRONG_BUY : le score/confidence/RR sont les
+        qualifications réelles. Refuser un BUY avec score 60 + R/R 3
+        sous prétexte qu'il n'est pas "STRONG" est arbitraire.
+        """
+        if sig.signal not in (Signal.BUY, Signal.STRONG_BUY):
             return False
         if sig.score < profile["min_score"]:
             return False

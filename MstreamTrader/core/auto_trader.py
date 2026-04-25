@@ -1375,10 +1375,12 @@ class AutoTrader:
     def _qualifies_master(self, sig, profile: dict) -> bool:
         """
         Filtre paramétré par le profil adapté au régime de marché courant.
-        Le check STRONG_BUY est explicite pour forcer l'intention haussière
-        (même si min_score baissait un jour, on resterait protégé).
+        Accepte BUY ET STRONG_BUY : le score min (55-70 selon régime) sert
+        déjà de filtre dur sur l'intention haussière. Refuser un BUY avec
+        score 60 et R/R 3 sous prétexte qu'il n'est pas "STRONG_BUY" est
+        arbitraire et ratait des opportunités valides.
         """
-        if sig.signal is not Signal.STRONG_BUY:
+        if sig.signal not in (Signal.BUY, Signal.STRONG_BUY):
             return False
         if sig.score < profile["min_score"]:
             return False
@@ -1424,10 +1426,8 @@ class AutoTrader:
             available -= amount_usdt
 
     def _qualifies_legacy(self, sig, config: dict) -> bool:
-        # Legacy portfolios demandent min_score ≥ 50, donc seul STRONG_BUY peut
-        # passer. On garde un check explicite de signal pour la lisibilité
-        # (protection si min_score baisse un jour dans la config).
-        if sig.signal is not Signal.STRONG_BUY:
+        # Accepte BUY + STRONG_BUY (le score >= min_score suffit comme filtre).
+        if sig.signal not in (Signal.BUY, Signal.STRONG_BUY):
             return False
         if sig.score < config["min_score"]:
             return False

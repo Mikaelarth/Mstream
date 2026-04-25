@@ -177,11 +177,24 @@ class BacktestScreen(Screen):
                 Clock.schedule_once(lambda dt: self._show_error("Aucune donnée téléchargée"), 0)
                 return
 
+            # Backtest "validation stratégie" : on relâche les filtres
+            # secondaires (ensemble, mtf, correlation) pour permettre à la
+            # stratégie de base de s'exprimer sur historique court.
+            # Le bot LIVE conserve tous les filtres pour la rigueur.
             cfg = BacktestConfig(
                 initial_capital=capital,
                 candle_duration_sec=3600,
                 periods_per_year=8760,
                 cooldown_candles=6,
+                # Seuils permissifs pour démontrer la stratégie de base
+                min_score=25.0,
+                min_confidence=30.0,
+                min_rr=1.5,
+                # Filtres avancés OFF pour avoir des trades en backtest
+                # (le bot LIVE les garde ON)
+                use_ensemble=False,
+                use_mtf_confluence=False,
+                use_correlation_block=False,
             )
             bt = Backtest(cfg)
             result = bt.run(coins_data)

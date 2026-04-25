@@ -473,14 +473,16 @@ class SettingsScreen(Screen):
             Clock.schedule_once(lambda dt: self._show_status(str(e), error=True), 0)
 
     def _show_status(self, msg: str, error: bool = False):
-        # Garde l'ancien Label en bas (utile pour debug + Windows)
-        self.status_text  = msg
+        # Plus d'affichage en bas — le toast central auto-dismiss suffit.
+        # On garde la propriété status_text vide pour ne pas casser les bindings,
+        # mais le Label en bas n'est plus utilisé.
+        self.status_text  = ""
         self.status_color = [0.9, 0.2, 0.2, 1] if error else [0.0, 0.85, 0.4, 1]
-        # Toast central auto-dismiss : visible immédiatement à l'écran
-        # même si la status bar est hors champ de vision (scrolled).
         try:
             from screens.toast import show_toast
             level = "error" if error else "success"
             show_toast(msg, level=level, duration=3.5)
         except (ImportError, Exception):
-            pass   # graceful : si toast échoue, le status bar reste fallback
+            # Fallback : si toast échoue (ex: import problem), on remet
+            # le message dans status_text comme avant.
+            self.status_text = msg
