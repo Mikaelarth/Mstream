@@ -23,6 +23,9 @@
 >   - 🟠 P1 : `backup.py` n'avait pas de `restore_from_backup()` (critère terminaison #17 invalidé). Fonction ajoutée avec rollback atomique + 5 tests.
 >   - 🟠 P1 : doc périmée (s'arrêtait à #17). Mise à jour.
 >   - 🟡 P2 reportés : Sharpe/PF stratégie sur 365j (calibration), KeyStore Android, paper mode 30j, APK 24h continu.
+> - **Itération #3 (revue code)** : 3 bugs trouvés en revue manuelle — `signals.py:260` `max(SL_atr, support*0.995)` resserrait le SL au lieu de l'élargir (fix : `min`) ; `optimize_params.py` utilisait `BacktestConfig()` defaults qui activaient ensemble/mtf/correlation, rendant le grid search inutile (0 trades sur 240 configs) ; `auto_trader._run_loop` perdait les tracebacks (`logger.error` → `logger.exception`).
+> - **Itération #4 (audit profond)** : 10 dimensions vérifiées (mutable defaults, == None, bare except, assert prod, divisions, threading, cohérence inter-modules). Code Python propre, aucun antipattern critique. Bug stratégique identifié : score EMA 50 ne pèse que ±19 sur 100 max → BUY en downtrend possible. Option `require_uptrend_for_buy` ajoutée à `signals.analyze()` et `BacktestConfig`.
+> - **Itération #5 (refonte stratégie data-driven)** : analyse des 6 trades perdants — 4 trades **ouverts simultanément** sur BTC/ETH/SOL/BNB le 31/01 16:00 (corrélation 0.9+), tous SL hit en cascade. Test config gagnante : `correlation_block + max_positions=1` produit Sharpe +2.16 sur 60j et +0.29 sur 365j. **MAIS walk-forward 365j (10 fenêtres 30j) verdict : NON ROBUSTE** — consistency 30 %, avg Sharpe -0.91, avg PF 0.83. La stratégie multi-indicateurs (RSI+MACD+BB+Stoch+EMA) **n'a pas d'edge prouvé**. Backtest UI aligné sur LIVE (correlation_block=True, max_positions=1) pour mesure honnête. **Refonte profonde requise** (pullback-only, volume, MTF strict) — chantier dédié.
 
 ---
 

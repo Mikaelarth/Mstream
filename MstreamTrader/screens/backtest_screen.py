@@ -177,24 +177,29 @@ class BacktestScreen(Screen):
                 Clock.schedule_once(lambda dt: self._show_error("Aucune donnée téléchargée"), 0)
                 return
 
-            # Backtest "validation stratégie" : on relâche les filtres
-            # secondaires (ensemble, mtf, correlation) pour permettre à la
-            # stratégie de base de s'exprimer sur historique court.
-            # Le bot LIVE conserve tous les filtres pour la rigueur.
+            # Backtest "validation stratégie" — alignée sur le LIVE pour
+            # une mesure HONNÊTE de l'edge :
+            #   - correlation_block ON  (= LIVE) : refuse trades corrélés
+            #     simultanés, évite les "cascades" de SL hits sur marché
+            #     synchronisé.
+            #   - ensemble OFF : trop strict sur historique court, l'agent
+            #     adaptatif n'a pas eu le temps de calibrer ses poids.
+            #   - mtf OFF : nécessite des données 1h+4h+1d simultanées
+            #     que le backtest n'a pas (mono-timeframe par run).
+            #   - max_positions=1 : empiriquement, donne le meilleur Sharpe
+            #     en moyenne (limite l'exposition au risque corrélé).
             cfg = BacktestConfig(
                 initial_capital=capital,
                 candle_duration_sec=3600,
                 periods_per_year=8760,
                 cooldown_candles=6,
-                # Seuils permissifs pour démontrer la stratégie de base
                 min_score=25.0,
                 min_confidence=30.0,
                 min_rr=1.5,
-                # Filtres avancés OFF pour avoir des trades en backtest
-                # (le bot LIVE les garde ON)
                 use_ensemble=False,
                 use_mtf_confluence=False,
-                use_correlation_block=False,
+                use_correlation_block=True,
+                max_positions=1,
             )
             bt = Backtest(cfg)
             result = bt.run(coins_data)
